@@ -1,0 +1,43 @@
+<html>
+    <head>
+        <title>Parcel Sandbox</title>
+        <meta charset="UTF-8" />
+        <link rel="stylesheet" href="styles.css" />
+    </head>
+
+    <body>
+        <div id="root">
+            <main></main>
+            <aside>
+                <h2>debug</h2>
+                <div>
+                    <div>hFOV</div>
+                    <input
+                        type="range"
+                        id="hfov"
+                        value="75"
+                        min="1"
+                        max="100"
+                        oninput="this.nextElementSibling.value = this.value"
+                    />
+                    <output>75</output>
+                </div>
+
+                <div>
+                    <div>vFOV</div>
+                    <input
+                        type="range"
+                        id="vfov"
+                        value="75"
+                        min="1"
+                        max="100"
+                        oninput="this.nextElementSibling.value = this.value"
+                    />
+                    <output>75</output>
+                </div>
+            </aside>
+        </div>
+
+        <script type="module" src="src/index.ts"></script>
+    </body>
+</html>
