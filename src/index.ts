@@ -285,7 +285,7 @@ function drawWalls(walls: Wall[]) {
                 ((segment.p1.y + segment.p2.y) / 2) ** 2
         );
 
-        // TODO: we might be able to optimise this with an early bounds test, not sure if worth it 
+        // TODO: we might be able to optimise this with an early bounds test, not sure if worth it
         if (
             !(
                 segment.intersectsPoly(VIEW_SPACE) ||
@@ -299,7 +299,7 @@ function drawWalls(walls: Wall[]) {
         }
 
         // important to do this as negative Y values can create artefacts during perspective division
-        // TODO: this clipping is causing issues with texture mapping, we might need to store the texture 
+        // TODO: this clipping is causing issues with texture mapping, we might need to store the texture
         //       coords and clip those too
         if (segment.p1.y < NEAR || segment.p2.y < NEAR) {
             segment.clipNear(NEAR);
@@ -321,27 +321,20 @@ function drawWalls(walls: Wall[]) {
             continue;
         }
 
-        // clip the projected coordinates to screen space
-        // bottom.clipRect(0, WIDTH - 0.5, 0, HEIGHT - 0.5);
-        // top.clipRect(0, WIDTH - 0.5, 0, HEIGHT - 0.5);
-
-        // bottom.round();
-        // top.round();
-
-        // TODO: sort out this clipping at some point - it shouldn't be needed now
-        // drawSegment(
-        //     bottom.copy().clipRect(0, WIDTH, 0, HEIGHT).round(),
-        //     wall.colour,
-        //     wall.alpha
-        // );
-        // drawSegment(
-        //     top.copy().clipRect(0, WIDTH, 0, HEIGHT).round(),
-        //     wall.colour,
-        //     wall.alpha
-        // );
-
         // fillColour(bottom, top, wall.colour, wall.alpha);
         fillTexture(bottom, top, segment.p1.y, segment.p2.y);
+
+        // TODO: temp for debugging
+        drawSegment(
+            bottom.copy().clipRect(0, WIDTH, 0, HEIGHT).round(),
+            wall.colour,
+            wall.alpha
+        );
+        drawSegment(
+            top.copy().clipRect(0, WIDTH, 0, HEIGHT).round(),
+            wall.colour,
+            wall.alpha
+        );
     }
 }
 
@@ -372,9 +365,6 @@ function fillColour(s1: Segment, s2: Segment, colour: Colour, alpha?: number) {
     }
 }
 
-
-const done = false;
-
 // TODO: ...
 // - consider alpha
 // - currently we cannot modify the start U/V coords. do we want the ability to do this, or is
@@ -383,81 +373,85 @@ const done = false;
 function fillTexture(s1: Segment, s2: Segment, d1: number, d2: number) {
     [s1, s2] = s1.p1.y < s2.p1.y ? [s1, s2] : [s2, s1];
 
-    const uStart = 0 / d1;
-    const uEnd = 2 / d2;
-    const vStart = 0;
-    const vEnd = 1;
-
-    d1 = 1 / d1;
-    d2 = 1 / d2;
-
-    const uDelta = uEnd - uStart;
-    const vDelta = vEnd - vStart;
-
     const xStart = s1.p1.x;
     const xEnd = s1.p2.x;
-
     const y1Start = s1.p1.y;
     const y1End = s1.p2.y;
     const y2Start = s2.p1.y;
     const y2End = s2.p2.y;
+    const uStart = 0 / d1;
+    const uEnd = 2 / d2;
+    const vStart = 0;
+    const vEnd = 1;
+    const dStart = d1;
+    const dEnd = d2;
+    const dInverseStart = 1 / d1;
+    const dInverseEnd = 1 / d2;
 
     // using s1 to get xDelta but they should share the same X coordinates
     const xDelta = xEnd - xStart;
+    const y1Delta = y1End - y1Start;
+    const y2Delta = y2End - y2Start;
+    const uDelta = uEnd - uStart;
+    const vDelta = vEnd - vStart;
+    const dDelta = dEnd - dStart;
+    const dInverseDelta = dInverseEnd - dInverseStart;
 
     // gradients
-    const y1M = (y1End - y1Start) / xDelta;
-    const y2M = (y2End - y2Start) / xDelta;
-    const dM = (d2 - d1) / xDelta;
+    const y1M = y1Delta / xDelta;
+    const y2M = y2Delta / xDelta;
     const uM = uDelta / xDelta;
+    const dInverseM = dInverseDelta / xDelta;
+    const dM = dDelta / xDelta;
 
     // clamp X to screen space, clamping Y will have to be done in the loop as it will vary by line
-    // TODO: would prefer to round these rather than ceil, but need to first sort the potential of 
+    // TODO: would prefer to round these rather than ceil, but need to first sort the potential of
     //       negative U/V in the loops resulting from `(xStartClamp - xStart)` and `(yStartClamp - yStart)`
     const xStartClamp = Math.ceil(clamp(xStart, 0, WIDTH));
     const xEndClamp = Math.ceil(clamp(xEnd, 0, WIDTH));
 
     // adjust Y and depth to start at correct point if X was clamped
-    let yStart = y1Start - y1M * (xStart - xStartClamp);
-    let yEnd = y2Start - y2M * (xStart - xStartClamp);
-    let d = d1 - dM * (xStart - xStartClamp);
+    let yStart = y1Start + y1M * (xStartClamp - xStart);
+    let yEnd = y2Start + y2M * (xStartClamp - xStart);
+    let u = uStart + uM * (xStartClamp - xStart);
+    let d = dStart + dM * (xStartClamp - xStart);
+    let dInverse = dInverseStart + dInverseM * (xStartClamp - xStart);
 
     const w = TEXTURES[0].width;
     const h = TEXTURES[0].height;
 
-    for (
-        let x = xStartClamp, u = (xStartClamp - xStart) * uM;
-        x < xEndClamp;
-        x++, u += uM
-    ) {
-        const textureX = round((u / d) * w) % w;
-        const vM = vDelta / (yEnd - yStart);
-
+    for (let x = xStartClamp; x < xEndClamp; x++) {
+        const textureX = round((u / dInverse) * h) % h;
         const yStartClamp = Math.ceil(clamp(yStart, 0, HEIGHT));
         const yEndClamp = Math.ceil(clamp(yEnd, 0, HEIGHT));
+        const vM = vDelta / (yEnd - yStart);
+        let v = vStart + vM * (yStartClamp - yStart);
 
-        for (
-            let y = yStartClamp, v = (yStartClamp - yStart) * vM;
-            y < yEndClamp;
-            y++, v += vM
-        ) {
-            const textureY = round(v * h) % h;
+        const relativeDepth = d / FAR;
+        const light = Math.min((1 / relativeDepth ** 2 - 1) / 10, 1);
+
+        for (let y = yStartClamp; y < yEndClamp; y++) {
+            const textureY = round(v * w) % w;
 
             // byte offset assumes the bytes are transposed (rotated 90 anticlockwise)
-            const byteOffset = (textureX * h + textureY) * 4;
+            const byteOffset = (textureX * w + textureY) * 4;
 
             const col = {
-                r: TEXTURES[0].bytes[byteOffset],
-                g: TEXTURES[0].bytes[byteOffset + 1],
-                b: TEXTURES[0].bytes[byteOffset + 2],
+                r: TEXTURES[0].bytes[byteOffset] * light,
+                g: TEXTURES[0].bytes[byteOffset + 1] * light,
+                b: TEXTURES[0].bytes[byteOffset + 2] * light,
             };
 
             setPixel(x, y, col);
+
+            v += vM;
         }
 
         yStart += y1M;
         yEnd += y2M;
+        u += uM;
         d += dM;
+        dInverse += dInverseM;
     }
 }
 
@@ -597,7 +591,7 @@ function draw(dt: number) {
 }
 
 async function init() {
-    await Texture.loadTexture("/res/test.png", true).then((t) => {
+    await Texture.loadTexture("/res/wall.png", true).then((t) => {
         TEXTURES.push(t);
     });
 }
