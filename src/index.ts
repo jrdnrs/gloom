@@ -40,7 +40,7 @@ const config: DrawerConfig = {
     scale: 3,
     nearestScaling: true,
     clearStyle: "#f0f0f0",
-    alpha: false
+    alpha: false,
 };
 
 const DRAW = new Drawer(document.querySelector("main")!, config);
@@ -50,7 +50,7 @@ const BUFFER_CANVAS = document.createElement("canvas");
 BUFFER_CANVAS.width = WIDTH;
 BUFFER_CANVAS.height = HEIGHT;
 const BUFFER_CTX = BUFFER_CANVAS.getContext("2d", {
-    alpha: config.alpha
+    alpha: config.alpha,
 })!;
 
 const BUFFER = new Uint8ClampedArray(WIDTH * HEIGHT * 4);
@@ -70,25 +70,25 @@ export type Colour = {
 const RED = {
     r: 192,
     g: 64,
-    b: 64
+    b: 64,
 };
 
 const GREEN = {
     r: 64,
     g: 192,
-    b: 64
+    b: 64,
 };
 
 const BLUE = {
     r: 64,
     g: 64,
-    b: 192
+    b: 192,
 };
 
 const YELLOW = {
     r: 192,
     g: 192,
-    b: 64
+    b: 64,
 };
 
 class Player {
@@ -237,7 +237,7 @@ let WALLS: Wall[] = [
         new Segment(new Vec2(2000, 2000), new Vec2(2000, 3000)),
         500,
         YELLOW
-    )
+    ),
 ];
 
 function perspectiveProjection(segment: Segment, yOffset: number): Segment {
@@ -285,7 +285,7 @@ function drawWalls(walls: Wall[]) {
                 ((segment.p1.y + segment.p2.y) / 2) ** 2
         );
 
-        // TODO: this can be optimised a lot
+        // TODO: we might be able to optimise this with an early bounds test, not sure if worth it 
         if (
             !(
                 segment.intersectsPoly(VIEW_SPACE) ||
@@ -299,6 +299,8 @@ function drawWalls(walls: Wall[]) {
         }
 
         // important to do this as negative Y values can create artefacts during perspective division
+        // TODO: this clipping is causing issues with texture mapping, we might need to store the texture 
+        //       coords and clip those too
         if (segment.p1.y < NEAR || segment.p2.y < NEAR) {
             segment.clipNear(NEAR);
         }
@@ -323,23 +325,23 @@ function drawWalls(walls: Wall[]) {
         // bottom.clipRect(0, WIDTH - 0.5, 0, HEIGHT - 0.5);
         // top.clipRect(0, WIDTH - 0.5, 0, HEIGHT - 0.5);
 
-        bottom.round();
-        top.round();
+        // bottom.round();
+        // top.round();
 
         // TODO: sort out this clipping at some point - it shouldn't be needed now
-        drawSegment(
-            bottom.copy().clipRect(0, WIDTH, 0, HEIGHT).round(),
-            wall.colour,
-            wall.alpha
-        );
-        drawSegment(
-            top.copy().clipRect(0, WIDTH, 0, HEIGHT).round(),
-            wall.colour,
-            wall.alpha
-        );
+        // drawSegment(
+        //     bottom.copy().clipRect(0, WIDTH, 0, HEIGHT).round(),
+        //     wall.colour,
+        //     wall.alpha
+        // );
+        // drawSegment(
+        //     top.copy().clipRect(0, WIDTH, 0, HEIGHT).round(),
+        //     wall.colour,
+        //     wall.alpha
+        // );
 
         // fillColour(bottom, top, wall.colour, wall.alpha);
-        // fillTexture(bottom, top, 0, 0);
+        fillTexture(bottom, top, segment.p1.y, segment.p2.y);
     }
 }
 
@@ -370,42 +372,92 @@ function fillColour(s1: Segment, s2: Segment, colour: Colour, alpha?: number) {
     }
 }
 
+
+const done = false;
+
+// TODO: ...
+// - consider alpha
+// - currently we cannot modify the start U/V coords. do we want the ability to do this, or is
+//   changing the end coords all we want for repeating/clipping in positive direction?
+// - consider adding bilinear filtering
 function fillTexture(s1: Segment, s2: Segment, d1: number, d2: number) {
-    const m1 = (s1.p2.y - s1.p1.y) / (s1.p2.x - s1.p1.x);
-    const m2 = (s2.p2.y - s2.p1.y) / (s2.p2.x - s2.p1.x);
+    [s1, s2] = s1.p1.y < s2.p1.y ? [s1, s2] : [s2, s1];
 
-    const x1 = Math.max(s1.p1.x, 0);
-    const x2 = Math.min(s1.p2.x, WIDTH);
+    const uStart = 0 / d1;
+    const uEnd = 2 / d2;
+    const vStart = 0;
+    const vEnd = 1;
 
-    let y1 = s1.p1.y - m1 * s1.p1.x;
-    let y2 = s2.p1.y - m2 * s2.p1.x;
+    d1 = 1 / d1;
+    d2 = 1 / d2;
 
-    // add starting part, up to starting X point
-    y1 += m1 * (x1 - 1);
-    y2 += m2 * (x1 - 1);
+    const uDelta = uEnd - uStart;
+    const vDelta = vEnd - vStart;
+
+    const xStart = s1.p1.x;
+    const xEnd = s1.p2.x;
+
+    const y1Start = s1.p1.y;
+    const y1End = s1.p2.y;
+    const y2Start = s2.p1.y;
+    const y2End = s2.p2.y;
+
+    // using s1 to get xDelta but they should share the same X coordinates
+    const xDelta = xEnd - xStart;
+
+    // gradients
+    const y1M = (y1End - y1Start) / xDelta;
+    const y2M = (y2End - y2Start) / xDelta;
+    const dM = (d2 - d1) / xDelta;
+    const uM = uDelta / xDelta;
+
+    // clamp X to screen space, clamping Y will have to be done in the loop as it will vary by line
+    // TODO: would prefer to round these rather than ceil, but need to first sort the potential of 
+    //       negative U/V in the loops resulting from `(xStartClamp - xStart)` and `(yStartClamp - yStart)`
+    const xStartClamp = Math.ceil(clamp(xStart, 0, WIDTH));
+    const xEndClamp = Math.ceil(clamp(xEnd, 0, WIDTH));
+
+    // adjust Y and depth to start at correct point if X was clamped
+    let yStart = y1Start - y1M * (xStart - xStartClamp);
+    let yEnd = y2Start - y2M * (xStart - xStartClamp);
+    let d = d1 - dM * (xStart - xStartClamp);
 
     const w = TEXTURES[0].width;
     const h = TEXTURES[0].height;
-    const wStep = w / (s1.p2.x - s1.p1.x);
 
-    for (let x = x1; x < x2; x++) {
-        y1 += m1;
-        y2 += m2;
-        const hStep = h / (y1 - y2);
+    for (
+        let x = xStartClamp, u = (xStartClamp - xStart) * uM;
+        x < xEndClamp;
+        x++, u += uM
+    ) {
+        const textureX = round((u / d) * w) % w;
+        const vM = vDelta / (yEnd - yStart);
 
-        for (let y = clamp(y2, 0, HEIGHT); y < clamp(y1, 0, HEIGHT); y++) {
-            const offset =
-                round(
-                    (y - clamp(y2, 0, HEIGHT)) * hStep + (x - x1) * wStep * h
-                ) * 4;
+        const yStartClamp = Math.ceil(clamp(yStart, 0, HEIGHT));
+        const yEndClamp = Math.ceil(clamp(yEnd, 0, HEIGHT));
+
+        for (
+            let y = yStartClamp, v = (yStartClamp - yStart) * vM;
+            y < yEndClamp;
+            y++, v += vM
+        ) {
+            const textureY = round(v * h) % h;
+
+            // byte offset assumes the bytes are transposed (rotated 90 anticlockwise)
+            const byteOffset = (textureX * h + textureY) * 4;
+
             const col = {
-                r: TEXTURES[0].bytes[offset % TEXTURES[0].bytes.length],
-                g: TEXTURES[0].bytes[(offset + 1) % TEXTURES[0].bytes.length],
-                b: TEXTURES[0].bytes[(offset + 2) % TEXTURES[0].bytes.length]
+                r: TEXTURES[0].bytes[byteOffset],
+                g: TEXTURES[0].bytes[byteOffset + 1],
+                b: TEXTURES[0].bytes[byteOffset + 2],
             };
 
             setPixel(x, y, col);
         }
+
+        yStart += y1M;
+        yEnd += y2M;
+        d += dM;
     }
 }
 
@@ -417,10 +469,9 @@ function setPixel(x: number, y: number, colour: Colour) {
     // BUFFER[offset + 3] = 255;
 }
 
-// prettier-ignore
 function blendPixel(x: number, y: number, colour: Colour, alpha: number) {
     const offset = (y * WIDTH + x) * 4;
-    BUFFER[offset] =     alpha * colour.r + (1 - alpha) * BUFFER[offset];
+    BUFFER[offset] = alpha * colour.r + (1 - alpha) * BUFFER[offset];
     BUFFER[offset + 1] = alpha * colour.g + (1 - alpha) * BUFFER[offset + 1];
     BUFFER[offset + 2] = alpha * colour.b + (1 - alpha) * BUFFER[offset + 2];
 }
@@ -526,6 +577,9 @@ function drawFrametimeGraph() {
 function draw(dt: number) {
     PLAYER.update(dt);
 
+    // TODO: firefox seems to interpret the `getContext().options.alpha` property differently?
+    //       even when it is disabled, it still applies the alpha channel when rendering, so filling with
+    //       32 makes everything look dark and faded on firefox but is fine on chrome
     BUFFER.fill(32);
     drawWalls(WALLS);
 
@@ -543,7 +597,7 @@ function draw(dt: number) {
 }
 
 async function init() {
-    await Texture.loadTexture("/res/wall.png").then((t) => {
+    await Texture.loadTexture("/res/test.png", true).then((t) => {
         TEXTURES.push(t);
     });
 }
