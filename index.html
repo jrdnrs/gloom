@@ -10,31 +10,43 @@
             <main></main>
             <aside>
                 <h2>debug</h2>
-                <div>
-                    <div>hFOV</div>
-                    <input
-                        type="range"
-                        id="hfov"
-                        value="75"
-                        min="1"
-                        max="100"
-                        oninput="this.nextElementSibling.value = this.value"
-                    />
-                    <output>75</output>
+                <div class="row">
+                    <div class="col">
+                        <div>
+                            <div>hFOV</div>
+                            <input
+                                type="range"
+                                id="hfov"
+                                value="75"
+                                min="1"
+                                max="100"
+                                oninput="this.nextElementSibling.value = this.value"
+                            />
+                            <output>75</output>
+                        </div>
+    
+                        <div>
+                            <div>vFOV</div>
+                            <input
+                                type="range"
+                                id="vfov"
+                                value="75"
+                                min="1"
+                                max="100"
+                                oninput="this.nextElementSibling.value = this.value"
+                            />
+                            <output>75</output>
+                        </div>
+                    </div>
+    
+                    <div class="col">
+                        <div>lockMousePitch</div>
+                        <input type="checkbox" id="lockMousePitch" />
+                    </div>
+
                 </div>
 
-                <div>
-                    <div>vFOV</div>
-                    <input
-                        type="range"
-                        id="vfov"
-                        value="75"
-                        min="1"
-                        max="100"
-                        oninput="this.nextElementSibling.value = this.value"
-                    />
-                    <output>75</output>
-                </div>
+               
             </aside>
         </div>
 

@@ -37,9 +37,9 @@ export default class Drawer {
         // this.context.imageSmoothingEnabled = false;
 
         this.context = this.canvas.getContext("2d", {
-            alpha: this.config.alpha
+            alpha: this.config.alpha,
         })!;
-        this.input = new Input();
+        this.input = new Input(this.canvas);
 
         this.timeElapsed = 0;
         this.frames = 0;

@@ -1,4 +1,4 @@
-export const KeyCodes = [
+export const KeyboardCodes = [
     "Backspace",
     "Tab",
     "Enter",
@@ -209,7 +209,14 @@ export const enum Key {
     Backslash,
     IntlBackslash,
     BracketRight,
-    Quote
+    Quote,
+
+    // mouse keys
+    MouseLeft = 900,
+    MouseMiddle,
+    MouseRight,
+    MouseBack,
+    MouseForward
 }
 
 /**

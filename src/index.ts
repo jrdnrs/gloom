@@ -19,8 +19,18 @@ let VIEW_SPACE = viewTrapezium(NEAR, FAR, toRadians(75));
 let HFOV = 1 / Math.tan(toRadians(75 / WIDTH));
 let VFOV = 1 / Math.tan(toRadians(75 / WIDTH));
 
+// DEBUG
+/////////////////////////////////////////////////////////////////
+let IN_VIEW = 0;
+let MOUSE_PITCH_LOCK = false;
+
 const hFovSlider = document.querySelector("#hfov")!;
 const vFovSlider = document.querySelector("#vfov")!;
+const lockPitch = document.querySelector("#lockMousePitch")!;
+
+lockPitch.addEventListener("input", (ev) => {
+    MOUSE_PITCH_LOCK = (ev.target as HTMLInputElement).checked;
+});
 
 hFovSlider.addEventListener("input", (ev) => {
     const deg = (ev.target as HTMLInputElement).valueAsNumber;
@@ -32,6 +42,8 @@ vFovSlider.addEventListener("input", (ev) => {
     const deg = (ev.target as HTMLInputElement).valueAsNumber;
     VFOV = 1 / Math.tan(toRadians(deg / WIDTH));
 });
+
+/////////////////////////////////////////////////////////////////
 
 const config: DrawerConfig = {
     ...DrawerConfigDefault,
@@ -148,10 +160,15 @@ class Player {
     }
 
     handleMovement(dt: number) {
-        const moveSpeed = dt * 0.33;
-        const verticalMoveSpeed = dt * 0.1;
+        const moveSpeed = dt * 0.67;
+        const verticalMoveSpeed = dt * 0.33;
         const yawSpeed = dt * 0.1;
         const pitchSpeed = dt * 0.0005;
+
+        const mouseMovement = DRAW.input.getMouseMovement();
+
+        this.yaw += mouseMovement.x * dt * 0.007;
+        if (!MOUSE_PITCH_LOCK) this.pitch -= mouseMovement.y * dt * 0.0001;
 
         // look up/down
         if (DRAW.input.isKeyHeld(Key.BracketLeft)) {
@@ -261,9 +278,6 @@ function perspectiveProjection(segment: Segment, yOffset: number): Segment {
 
     return segment;
 }
-
-// TEMP
-let IN_VIEW = 0;
 
 function sortWalls() {
     WALLS.sort((a, b) => b.distance - a.distance);

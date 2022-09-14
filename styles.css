@@ -11,6 +11,23 @@ body {
     justify-content: space-between;
 }
 
+.col {
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+    margin-right: 1em;
+}
+
+.row {
+    display: flex;
+    flex-direction: row;
+    justify-content: start;
+}
+
+input[type="checkbox"] {
+    width: 1em;
+}
+
 aside {
     margin: 1em;
 }
