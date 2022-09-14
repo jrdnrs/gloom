@@ -225,34 +225,43 @@ class Player {
 const PLAYER = new Player(10);
 
 let WALLS: Wall[] = [
-    new Wall(new Segment(new Vec2(-250, 300), new Vec2(250, 300)), 250, RED),
+    new Wall(new Segment(new Vec2(-250, 300), new Vec2(250, 300)), 250, 0, RED),
     new Wall(
         new Segment(new Vec2(-300, 700), new Vec2(-250, 300)),
         250,
-        GREEN,
-        0.5
+        0,
+        GREEN
     ),
-    new Wall(new Segment(new Vec2(250, 300), new Vec2(-300, 700)), 250, BLUE),
-    new Wall(new Segment(new Vec2(1000, 1000), new Vec2(0, 0)), 250, YELLOW),
+    new Wall(
+        new Segment(new Vec2(250, 300), new Vec2(-300, 700)),
+        250,
+        0,
+        BLUE
+    ),
+    new Wall(new Segment(new Vec2(1000, 1000), new Vec2(0, 0)), 250, 100, YELLOW),
 
     new Wall(
         new Segment(new Vec2(6000, 2000), new Vec2(2000, 2000)),
         500,
+        0,
         BLUE
     ),
     new Wall(
         new Segment(new Vec2(6000, 3000), new Vec2(6000, 2000)),
         500,
+        0,
         YELLOW
     ),
     new Wall(
         new Segment(new Vec2(2000, 3000), new Vec2(6000, 3000)),
         500,
+        0,
         BLUE
     ),
     new Wall(
         new Segment(new Vec2(2000, 2000), new Vec2(2000, 3000)),
         500,
+        0,
         YELLOW
     ),
 ];
@@ -319,8 +328,10 @@ function drawWalls(walls: Wall[]) {
             segment.clipNear(NEAR);
         }
 
-        const bottom = perspectiveProjection(segment.copy(), wall.height / 2);
-        const top = perspectiveProjection(segment.copy(), -wall.height / 2);
+        // using +/- half of wall height to split it at the horizon (middle of screen)
+        // negating the yOffset as positive Y is down in screen space
+        const bottom = perspectiveProjection(segment.copy(), wall.height / 2 - wall.yOffset);
+        const top = perspectiveProjection(segment.copy(), -wall.height / 2  - wall.yOffset);
 
         // with a more sophisticated visibility check we could do this earlier,
         // but for now check if its out of screen space will do
