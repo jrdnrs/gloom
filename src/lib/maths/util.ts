@@ -24,8 +24,53 @@ export function toRadians(degrees: number): number {
     return Math.PI * (degrees / 180);
 }
 
-export function lerp(start: number, end: number, percent: number): number {
-    return start + (end - start) * percent;
+export function average(values: number[]): number {
+    return (
+        values.reduce((prev, curr) => {
+            return (curr += prev);
+        }) / values.length
+    );
+}
+
+export function lerp(start: number, end: number, t: number): number {
+    return start + (end - start) * t;
+}
+
+export function fullLerp(
+    y1: number,
+    y2: number,
+    x1: number,
+    x2: number,
+    xStart: number,
+    xStop: number
+): number[] {
+    const yDelta = y2 - y1;
+    const xDelta = x2 - x1;
+    const m = yDelta / xDelta;
+    let y = y1 + (xStart - x1) * m;
+    let v = [y];
+    for (let x = xStart; x < xStop; x++) {
+        v.push((y += m));
+    }
+    return v;
+}
+
+export function* fullLerpLazy(
+    y1: number,
+    y2: number,
+    x1: number,
+    x2: number,
+    xStart: number,
+    xStop: number
+): Generator<number> {
+    const yDelta = y2 - y1;
+    const xDelta = x2 - x1;
+    const m = yDelta / xDelta;
+    let y = y1 + (xStart - x1) * m;
+    yield y;
+    for (let x = xStart; x < xStop; x++) {
+        yield (y += m);
+    }
 }
 
 export function viewTrapezium(near: number, far: number, fovRad: number): Quad {

@@ -1,4 +1,4 @@
-import { roundDown } from "./maths/util";
+import { average, roundDown } from "./maths/util";
 import Input from "./input/input";
 import type Vec2 from "./maths/vec2";
 
@@ -82,8 +82,7 @@ export default class Drawer {
     private updateTimings(time: number): number {
         const dt = time - this.timeElapsed;
         this.frametimes[this.frames % FT_SIZE] = dt;
-        this.averageFrametime =
-            this.frametimes.reduce((prev, curr) => (curr += prev)) / FT_SIZE;
+        this.averageFrametime = average(this.frametimes);
         this.fps = 1000 / this.averageFrametime;
 
         return dt;
