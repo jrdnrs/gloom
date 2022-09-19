@@ -3,7 +3,7 @@ import { DrawerConfigDefault, DrawerConfig } from "./lib/main";
 import { Key } from "./lib/input/keys";
 import { clamp, lerp, toRadians, viewTrapezium } from "./lib/maths/util";
 import Vec2 from "./lib/maths/vec2";
-import Wall from "./wall";
+import { Wall, Floor, YELLOW, BLUE, GREEN, MAGENTA, RED } from "./surface";
 import Segment from "./lib/maths/segment";
 import Texture from "./texture";
 import Quad from "./lib/maths/quad";
