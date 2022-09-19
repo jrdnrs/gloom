@@ -14,8 +14,11 @@ import Segment from "./lib/maths/segment";
 import Triangle from "./lib/maths/triangle";
 import Vec2 from "./lib/maths/vec2";
 import { textureTriangle, drawSegment, textureWall } from "./rasterize";
-import { Floor, GREEN, Wall } from "./surface";
+import { MAGENTA, Floor, Wall } from "./surface";
 
+export interface Renderable {
+    distance: number;
+}
 
 // TODO: stop using this
 function perspectiveProjectionSeg(segment: Segment, zOffset: number): Segment {
@@ -72,6 +75,16 @@ export function drawFloors(floors: Floor[]) {
         let triangles: Triangle[] = [];
         let attributes: Attributes[][] = [];
 
+        let x = 0;
+        let y = 0;
+        for (const p of transformed) {
+            x += p.x;
+            y += p.y;
+        }
+        x /= transformed.length;
+        y /= transformed.length;
+        floor.distance = Math.sqrt(x ** 2 + y ** 2);
+
         for (let i = 0; i < floor.indices.length; i += 3) {
             const p1 = transformed[floor.indices[i]];
             const p2 = transformed[floor.indices[i + 1]];
@@ -99,7 +112,7 @@ export function drawFloors(floors: Floor[]) {
                 )
             ) {
                 continue;
-            } 
+            }
 
             const out = tri.clipNearAttr(NEAR, attr);
 
@@ -125,7 +138,7 @@ export function drawFloors(floors: Floor[]) {
                 for (const seg of tri.iterSegs()) {
                     drawSegment(
                         seg.copy().clipRect(0, WIDTH, 0, HEIGHT).round(),
-                        GREEN,
+                        MAGENTA,
                         floor.alpha
                     );
                 }
@@ -134,15 +147,11 @@ export function drawFloors(floors: Floor[]) {
     }
 }
 
-function sortWalls(walls: Wall[]) {
-    walls.sort((a, b) => b.distance - a.distance);
+export function sortRenderables(renderables: Renderable[]) {
+    renderables.sort((a, b) => a.distance - b.distance);
 }
 
 export function drawWalls(walls: Wall[]) {
-    // sort the walls from farthest to nearest,
-    // based on the distance calculation from the previous frame
-    sortWalls(walls);
-
     for (const wall of walls) {
         const segment = new Segment(
             wall.seg.p1
@@ -169,10 +178,18 @@ export function drawWalls(walls: Wall[]) {
             )
         ) {
             continue;
-        } 
+        }
 
-        let a1 = { u: wall.textureCoords[0].x, v: wall.textureCoords[0].y, d: segment.p1.y };
-        let a2 = { u: wall.textureCoords[1].x, v: wall.textureCoords[1].y, d: segment.p2.y };
+        let a1 = {
+            u: wall.textureCoords[0].x,
+            v: wall.textureCoords[0].y,
+            d: segment.p1.y,
+        };
+        let a2 = {
+            u: wall.textureCoords[1].x,
+            v: wall.textureCoords[1].y,
+            d: segment.p2.y,
+        };
 
         // important to do this as negative Y values can create artefacts during perspective division
         // TODO: this clipping is causing issues with texture mapping, we might need to store the texture
@@ -216,12 +233,12 @@ export function drawWalls(walls: Wall[]) {
         if (WIREFRAME) {
             drawSegment(
                 bottom.copy().clipRect(0, WIDTH, 0, HEIGHT).round(),
-                GREEN,
+                MAGENTA,
                 wall.alpha
             );
             drawSegment(
                 top.copy().clipRect(0, WIDTH, 0, HEIGHT).round(),
-                GREEN,
+                MAGENTA,
                 wall.alpha
             );
         }

@@ -1,4 +1,11 @@
-import { Attributes, FAR, FRAMEBUFFER, HEIGHT, WIDTH } from "./index";
+import {
+    Attributes,
+    FAR,
+    FRAMEBUFFER,
+    DEPTH_BUFFER,
+    HEIGHT,
+    WIDTH,
+} from "./index";
 import { clamp, lerp } from "./lib/maths/util";
 import { Colour } from "./surface";
 import type Segment from "./lib/maths/segment";
@@ -353,19 +360,24 @@ export function textureTriangle(
             let v = vStart + vM * (xStartClamp - xStart);
 
             for (let x = xStartClamp; x < xEndClamp; x++) {
-                const textureX = round(u * d * w) % w;
-                const textureY = round(v * d * h) % h;
+                if (DEPTH_BUFFER[y * WIDTH + x] < dInverse) {
+                    DEPTH_BUFFER[y * WIDTH + x] = dInverse;
 
-                // readOffset assumes the bytes are normal orientation (not transposed like walls)
-                const readOffset = (textureY * w + textureX) * 4;
-                const writeOffset = (y * WIDTH + x) * 4;
+                    const textureX = round(u * d * w) % w;
+                    const textureY = round(v * d * h) % h;
 
-                // inline setPixel
-                FRAMEBUFFER[writeOffset] = texture.bytes[readOffset] * light;
-                FRAMEBUFFER[writeOffset + 1] =
-                    texture.bytes[readOffset + 1] * light;
-                FRAMEBUFFER[writeOffset + 2] =
-                    texture.bytes[readOffset + 2] * light;
+                    // readOffset assumes the bytes are normal orientation (not transposed like walls)
+                    const readOffset = (textureY * w + textureX) * 4;
+                    const writeOffset = (y * WIDTH + x) * 4;
+
+                    // inline setPixel
+                    FRAMEBUFFER[writeOffset] =
+                        texture.bytes[readOffset] * light;
+                    FRAMEBUFFER[writeOffset + 1] =
+                        texture.bytes[readOffset + 1] * light;
+                    FRAMEBUFFER[writeOffset + 2] =
+                        texture.bytes[readOffset + 2] * light;
+                }
 
                 u += uM;
                 v += vM;
@@ -466,19 +478,24 @@ export function textureTriangle(
             let v = vStart + vM * (xStartClamp - xStart);
 
             for (let x = xStartClamp; x < xEndClamp; x++) {
-                const textureX = round(u * d * w) % w;
-                const textureY = round(v * d * h) % h;
+                if (DEPTH_BUFFER[y * WIDTH + x] < dInverse) {
+                    DEPTH_BUFFER[y * WIDTH + x] = dInverse;
 
-                // readOffset assumes the bytes are normal orientation (not transposed like walls)
-                const readOffset = (textureY * w + textureX) * 4;
-                const writeOffset = (y * WIDTH + x) * 4;
+                    const textureX = round(u * d * w) % w;
+                    const textureY = round(v * d * h) % h;
 
-                // inline setPixel
-                FRAMEBUFFER[writeOffset] = texture.bytes[readOffset] * light;
-                FRAMEBUFFER[writeOffset + 1] =
-                    texture.bytes[readOffset + 1] * light;
-                FRAMEBUFFER[writeOffset + 2] =
-                    texture.bytes[readOffset + 2] * light;
+                    // readOffset assumes the bytes are normal orientation (not transposed like walls)
+                    const readOffset = (textureY * w + textureX) * 4;
+                    const writeOffset = (y * WIDTH + x) * 4;
+
+                    // inline setPixel
+                    FRAMEBUFFER[writeOffset] =
+                        texture.bytes[readOffset] * light;
+                    FRAMEBUFFER[writeOffset + 1] =
+                        texture.bytes[readOffset + 1] * light;
+                    FRAMEBUFFER[writeOffset + 2] =
+                        texture.bytes[readOffset + 2] * light;
+                }
 
                 u += uM;
                 v += vM;
@@ -609,18 +626,23 @@ export function textureWall(
             const light = 1;
 
             for (let y = yStartClamp; y < yEndClamp; y++) {
-                const textureY = round(v * w) % w;
+                if (DEPTH_BUFFER[y * WIDTH + x] < dInverse) {
+                    DEPTH_BUFFER[y * WIDTH + x] = dInverse;
 
-                // readOffset offset assumes the bytes are transposed (rotated 90 anticlockwise)
-                const readOffset = (textureX * w + textureY) * 4;
-                const writeOffset = (y * WIDTH + x) * 4;
+                    const textureY = round(v * w) % w;
 
-                // inline setPixel
-                FRAMEBUFFER[writeOffset] = texture.bytes[readOffset] * light;
-                FRAMEBUFFER[writeOffset + 1] =
-                    texture.bytes[readOffset + 1] * light;
-                FRAMEBUFFER[writeOffset + 2] =
-                    texture.bytes[readOffset + 2] * light;
+                    // readOffset offset assumes the bytes are transposed (rotated 90 anticlockwise)
+                    const readOffset = (textureX * w + textureY) * 4;
+                    const writeOffset = (y * WIDTH + x) * 4;
+
+                    // inline setPixel
+                    FRAMEBUFFER[writeOffset] =
+                        texture.bytes[readOffset] * light;
+                    FRAMEBUFFER[writeOffset + 1] =
+                        texture.bytes[readOffset + 1] * light;
+                    FRAMEBUFFER[writeOffset + 2] =
+                        texture.bytes[readOffset + 2] * light;
+                }
 
                 v += vM;
             }

@@ -19,10 +19,10 @@ import { Wall, Floor, YELLOW, BLUE, GREEN, MAGENTA, RED } from "./surface";
 import Segment from "./lib/maths/segment";
 import Texture from "./texture";
 import Camera from "./camera";
-import { drawFloors, drawWalls } from "./render";
+import { drawFloors, drawWalls, sortRenderables } from "./render";
 
-export const WIDTH = 320;
-export const HEIGHT = 200;
+export const WIDTH = 480;
+export const HEIGHT = 320;
 
 export const NEAR = 10;
 export const FAR = 10_000;
@@ -61,7 +61,7 @@ const config: DrawerConfig = {
     ...DrawerConfigDefault,
     width: WIDTH,
     height: HEIGHT,
-    scale: 3,
+    scale: 2,
     nearestScaling: true,
     clearStyle: "#f0f0f0",
     alpha: false,
@@ -77,12 +77,13 @@ const BUFFER_CTX = BUFFER_CANVAS.getContext("2d", {
     alpha: config.alpha,
 })!;
 
+export const DEPTH_BUFFER = new Array<number>(WIDTH * HEIGHT);
 export const FRAMEBUFFER = new Uint8ClampedArray(WIDTH * HEIGHT * 4);
 const IMAGE = new ImageData(FRAMEBUFFER, WIDTH, HEIGHT);
 
 export const CAMERA = new Camera();
 
-const TEXTURES: Texture[] = [];
+export const TEXTURES: Texture[] = [];
 
 export type Attributes = {
     u: number;
@@ -101,7 +102,15 @@ async function init() {
 }
 
 async function loadTextures() {
-    const texturePaths = ["/res/test.png", "/res/wall.png", "/res/tiles.png"];
+    const texturePaths = [
+        "/res/test.png",
+        "/res/wall.png",
+        "/res/tiles.png",
+        "/res/grass.png",
+        "/res/grass_2.png",
+        "/res/grass_3.png",
+        "/res/blue.png",
+    ];
 
     for (const path of texturePaths) {
         const t = await Texture.loadTexture(path, true);
@@ -117,7 +126,7 @@ function loadData() {
             250,
             0,
             RED,
-            TEXTURES[1]
+            TEXTURES[2]
         ),
         new Wall(
             new Segment(new Vec2(-300, 700), new Vec2(-250, 300)),
@@ -125,7 +134,7 @@ function loadData() {
             250,
             0,
             GREEN,
-            TEXTURES[1]
+            TEXTURES[2]
         ),
         new Wall(
             new Segment(new Vec2(250, 300), new Vec2(-300, 700)),
@@ -133,7 +142,7 @@ function loadData() {
             250,
             0,
             BLUE,
-            TEXTURES[1]
+            TEXTURES[2]
         ),
         new Wall(
             new Segment(new Vec2(1000, 1000), new Vec2(0, 0)),
@@ -181,16 +190,21 @@ function loadData() {
     floors = [
         new Floor(
             [
-                new Vec2(3000, 1000),
-                new Vec2(4000, 1000),
-                new Vec2(4000, 0),
-                new Vec2(3000, 0),
+                new Vec2(-100_000, -100_000),
+                new Vec2(-100_000, 100_000),
+                new Vec2(100_000, 100_000),
+                new Vec2(100_000, -100_000),
             ],
-            [new Vec2(0, 0), new Vec2(1, 0), new Vec2(1, 1), new Vec2(0, 1)],
+            [
+                new Vec2(0, 0),
+                new Vec2(200, 0),
+                new Vec2(200, 200),
+                new Vec2(0, 200),
+            ],
             [0, 1, 2, 0, 2, 3],
             -125,
             BLUE,
-            TEXTURES[2]
+            TEXTURES[4]
         ),
     ];
 }
@@ -232,8 +246,15 @@ function draw(dt: number) {
     //       even when it is disabled, it still applies the alpha channel when rendering, so filling with
     //       32 makes everything look dark and faded on firefox but is fine on chrome
     FRAMEBUFFER.fill(32);
-    drawFloors(floors);
+    DEPTH_BUFFER.fill(0);
+
+    // sort the walls/floors from nearest to farthest,
+    // based on the distance calculation from the previous frame
+    sortRenderables(walls);
+    sortRenderables(floors);
+
     drawWalls(walls);
+    drawFloors(floors);
 
     BUFFER_CTX.putImageData(IMAGE, 0, 0);
     CTX.drawImage(BUFFER_CANVAS, 0, 0);
