@@ -220,6 +220,7 @@ function draw(dt: number) {
     //       even when it is disabled, it still applies the alpha channel when rendering, so filling with
     //       32 makes everything look dark and faded on firefox but is fine on chrome
     FRAMEBUFFER.fill(32);
+    drawFloors(floors);
     drawWalls(walls);
 
     BUFFER_CTX.putImageData(IMAGE, 0, 0);
