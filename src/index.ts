@@ -21,8 +21,9 @@ let VFOV = 1 / Math.tan(toRadians(75 / WIDTH));
 
 // DEBUG
 /////////////////////////////////////////////////////////////////
-let IN_VIEW = 0;
-let MOUSE_PITCH_LOCK = false;
+export let WIREFRAME = true;
+export let OVERLAY = true;
+export let MOUSE_PITCH_LOCK = false;
 
 const hFovSlider = document.querySelector("#hfov")!;
 const vFovSlider = document.querySelector("#vfov")!;
@@ -601,21 +602,22 @@ function draw(dt: number) {
 
     BUFFER_CTX.putImageData(IMAGE, 0, 0);
     CTX.drawImage(BUFFER_CANVAS, 0, 0);
-    PLAYER.drawStats();
 
-    CTX.fillText(IN_VIEW.toString(), 5, 100);
-    IN_VIEW = 0;
+    if (DRAW.input.isKeyPressed(Key.F1)) {
+        WIREFRAME = !WIREFRAME;
+    }
+    if (DRAW.input.isKeyPressed(Key.F2)) {
+        OVERLAY = !OVERLAY;
+    }
 
-    drawFps();
+    if (OVERLAY) {
+        CAMERA.drawStats();
 
-    // FIX: FPS limiting is clearly not perfect
-    drawFrametimeGraph();
-}
+        drawFps();
 
-async function init() {
-    await Texture.loadTexture("/res/wall.png", true).then((t) => {
-        TEXTURES.push(t);
-    });
+        // TODO: FPS limiting is clearly not perfect
+        drawFrametimeGraph();
+    }
 }
 
 init().then(() => DRAW.run(draw));
