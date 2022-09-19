@@ -76,9 +76,11 @@ export default class Vec2 {
         return this;
     }
 
-    rotate(rad: number): this {
-        const cos = Math.cos(rad);
-        const sin = Math.sin(rad);
+    rotate(
+        rad: number,
+        sin: number = Math.sin(rad),
+        cos: number = Math.cos(rad)
+    ): this {
         const x = this.x;
         const y = this.y;
         this.x = cos * x - sin * y;
