@@ -1,3 +1,15 @@
+// @ts-ignore
+if (process.env.NODE_ENV !== "production") {
+    // @ts-ignore
+    const hot = module.hot;
+    if (hot) {
+        hot.dispose(() => {
+            window.location.reload();
+            throw "hotReload";
+        });
+    }
+}
+
 import Drawer from "./lib/main";
 import { DrawerConfigDefault, DrawerConfig } from "./lib/main";
 import { Key } from "./lib/input/keys";
