@@ -24,7 +24,8 @@ export default class Drawer {
 
     constructor(container: HTMLElement, config?: DrawerConfig) {
         this.config = config ?? DrawerConfigDefault;
-        this.canvas = container.appendChild(document.createElement("canvas"));
+        this.canvas = document.createElement("canvas");
+        container.replaceChildren(this.canvas);
 
         this.canvas.width = this.config.width;
         this.canvas.height = this.config.height;
@@ -154,5 +155,5 @@ export const DrawerConfigDefault: DrawerConfig = {
     clearStyle: "#ffffff",
     alpha: false,
     limitFps: false,
-    targetFps: 60
+    targetFps: 60,
 };
