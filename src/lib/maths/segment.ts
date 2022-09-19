@@ -1,3 +1,4 @@
+import { Attributes } from "../../index";
 import type Polygon from "./poly";
 import Vec2 from "./vec2";
 
@@ -166,6 +167,45 @@ export default class Segment {
                 p.y = yMin;
                 p.x = ((x2 - x1) / (y2 - y1)) * (yMin - y1) + x1;
             }
+        }
+
+        return this;
+    }
+
+    /**
+     * Clips _this_ segment on the Y axis when below the provided `yMin`.
+     * This will also interpolate the provided attributes in the same way for U and D
+     */
+    clipNearAttr(yMin: number, a1: Attributes, a2: Attributes): this {
+        const x1 = this.p1.x;
+        const y1 = this.p1.y;
+        const x2 = this.p2.x;
+        const y2 = this.p2.y;
+        const u1 = a1.u;
+        const v1 = a1.v;
+        const d1 = a1.d;
+        const u2 = a2.u;
+        const v2 = a2.v;
+        const d2 = a2.d;
+
+        if (this.p1.y < yMin) {
+            const t = (yMin - y1) / (y2 - y1);
+
+            this.p1.y = yMin;
+            this.p1.x = x1 + t * (x2 - x1);
+            a1.u = u1 + t * (u2 - u1);
+            a1.v = v1 + t * (v2 - v1);
+            a1.d = d1 + t * (d2 - d1);
+        }
+
+        if (this.p2.y < yMin) {
+            const t = (yMin - y1) / (y2 - y1);
+
+            this.p2.y = yMin;
+            this.p2.x = x1 + t * (x2 - x1);
+            a2.u = u1 + t * (u2 - u1);
+            a2.v = v1 + t * (v2 - v1);
+            a2.d = d1 + t * (d2 - d1);
         }
 
         return this;

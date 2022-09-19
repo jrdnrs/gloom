@@ -70,13 +70,10 @@ const IMAGE = new ImageData(BUFFER, WIDTH, HEIGHT);
 
 const TEXTURES: Texture[] = [];
 
-/**
- * @param rgb must be an integer between 0 and 255
- **/
-export type Colour = {
-    r: number;
-    g: number;
-    b: number;
+export type Attributes = {
+    u: number;
+    v: number;
+    d: number;
 };
 
 const RED = {
