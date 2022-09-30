@@ -1,3 +1,4 @@
+import { Poly } from "./lib/maths/poly";
 import type Segment from "./lib/maths/segment";
 import type Vec2 from "./lib/maths/vec2";
 import type Texture from "./texture";
@@ -73,6 +74,7 @@ export class Wall {
 }
 
 export class Floor {
+    poly: Poly;
     points: Vec2[];
     textureCoords: Vec2[];
     indices: number[];
@@ -92,6 +94,7 @@ export class Floor {
         alpha?: number
     ) {
         this.points = points;
+        this.poly = new Poly(this.points);
         this.textureCoords = textureCoords;
         this.indices = indices;
         this.zOffset = zOffset;
