@@ -41,7 +41,7 @@ export let VFOV = 1 / Math.tan(toRadians(75 / WIDTH));
 
 // DEBUG
 /////////////////////////////////////////////////////////////////
-export let WIREFRAME = true;
+export let WIREFRAME = false;
 export let OVERLAY = true;
 export let MOUSE_PITCH_LOCK = false;
 
@@ -153,18 +153,19 @@ function loadData() {
             BLUE,
             TEXTURES[2]
         ),
+
         new Wall(
-            new Segment(new Vec2(1000, 1000), new Vec2(0, 0)),
-            DEFAULT_WALL_TEX_COORDS,
-            250,
-            100,
+            new Segment(new Vec2(1000, 1000), new Vec2(100, 100)),
+            [new Vec2(0, 0), new Vec2(5, 1)],
+            300,
+            0,
             YELLOW,
             TEXTURES[1]
         ),
 
         new Wall(
             new Segment(new Vec2(6000, 2000), new Vec2(2000, 2000)),
-            DEFAULT_WALL_TEX_COORDS,
+            [new Vec2(0, 0), new Vec2(16, 1)],
             500,
             0,
             BLUE,
@@ -172,7 +173,7 @@ function loadData() {
         ),
         new Wall(
             new Segment(new Vec2(6000, 3000), new Vec2(6000, 2000)),
-            DEFAULT_WALL_TEX_COORDS,
+            [new Vec2(0, 0), new Vec2(3, 1)],
             500,
             0,
             YELLOW,
@@ -180,7 +181,7 @@ function loadData() {
         ),
         new Wall(
             new Segment(new Vec2(2000, 3000), new Vec2(6000, 3000)),
-            DEFAULT_WALL_TEX_COORDS,
+            [new Vec2(0, 0), new Vec2(16, 1)],
             500,
             0,
             BLUE,
@@ -188,7 +189,7 @@ function loadData() {
         ),
         new Wall(
             new Segment(new Vec2(2000, 2000), new Vec2(2000, 3000)),
-            DEFAULT_WALL_TEX_COORDS,
+            [new Vec2(0, 0), new Vec2(3, 1)],
             500,
             0,
             YELLOW,
@@ -211,9 +212,36 @@ function loadData() {
                 new Vec2(0, 200),
             ],
             [0, 1, 2, 0, 2, 3],
-            -125,
+            0,
             BLUE,
             TEXTURES[4]
+        ),
+        new Floor(
+            [
+                new Vec2(2000, 2000),
+                new Vec2(2000, 3000),
+                new Vec2(6000, 3000),
+                new Vec2(6000, 2000),
+            ],
+            [new Vec2(0, 0), new Vec2(2, 0), new Vec2(2, 2), new Vec2(0, 2)],
+            [0, 1, 2, 0, 2, 3],
+            0.01,
+            BLUE,
+            TEXTURES[6]
+        ),
+
+        new Floor(
+            [
+                new Vec2(4000, 2000),
+                new Vec2(4000, 3000),
+                new Vec2(8000, 3000),
+                new Vec2(8000, 2000),
+            ],
+            [new Vec2(0, 0), new Vec2(2, 0), new Vec2(2, 2), new Vec2(0, 2)],
+            [0, 1, 2, 0, 2, 3],
+            600.01,
+            BLUE,
+            TEXTURES[2]
         ),
     ];
 }

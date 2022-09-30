@@ -15,7 +15,7 @@ import Quad from "./lib/maths/quad";
 import Segment from "./lib/maths/segment";
 import Triangle from "./lib/maths/triangle";
 import Vec2 from "./lib/maths/vec2";
-import { textureTriangle, drawSegment, textureWall } from "./rasterize";
+import { textureTriangle, drawSegment, textureWall } from "./rasterise";
 import { MAGENTA, Floor, Wall } from "./surface";
 
 export interface Renderable {
