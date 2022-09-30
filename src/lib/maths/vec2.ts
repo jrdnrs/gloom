@@ -1,4 +1,4 @@
-import type Polygon from "./poly";
+import type { Polygon } from "./poly";
 import Segment from "./segment";
 
 export default class Vec2 {
@@ -8,6 +8,13 @@ export default class Vec2 {
     constructor(x: number, y: number) {
         this.x = x;
         this.y = y;
+    }
+
+    /**
+     * Returns the normal of the vector which is perpendicular (rotated 90 degrees)
+     */
+    static normal(v: Vec2): Vec2 {
+        return new Vec2(-v.y, v.x);
     }
 
     /**
@@ -23,9 +30,15 @@ export default class Vec2 {
 
     normalise(): this {
         const m = this.magnitude();
-        this.x /= m;
-        this.y /= m;
+        if (m > 0) {
+            this.x /= m;
+            this.y /= m;
+        }
         return this;
+    }
+
+    dot(rhs: Vec2): number {
+        return this.x * rhs.x + this.y * rhs.y;
     }
 
     add(rhs: Vec2): this {
@@ -138,7 +151,7 @@ export default class Vec2 {
         );
         let intersections = 0;
 
-        for (const seg of poly.iterSegs()) {
+        for (const seg of poly.segments) {
             if (seg.intersectsSeg(extendedPoint)) intersections++;
         }
 

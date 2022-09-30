@@ -1,5 +1,5 @@
 import type Vec2 from "./vec2";
-import type Polygon from "./poly";
+import type { Polygon } from "./poly";
 import Segment from "./segment";
 import { Attributes } from "../../index";
 
@@ -10,6 +10,8 @@ export default class Triangle {
     s1: Segment;
     s2: Segment;
     s3: Segment;
+    points: Vec2[];
+    segments: Segment[];
 
     constructor(p1: Vec2, p2: Vec2, p3: Vec2) {
         this.p1 = p1;
@@ -18,34 +20,8 @@ export default class Triangle {
         this.s1 = new Segment(this.p1, this.p2);
         this.s2 = new Segment(this.p2, this.p3);
         this.s3 = new Segment(this.p3, this.p1);
-    }
-
-    *iterPoints(): Generator<Vec2> {
-        yield this.p1;
-        yield this.p2;
-        yield this.p3;
-    }
-
-    *iterSegs(): Generator<Segment> {
-        yield this.s1;
-        yield this.s2;
-        yield this.s3;
-    }
-
-    /**
-     * Returns specified point in _this_ triangle
-     */
-    get(index: number): Vec2 {
-        switch (index) {
-            case 0:
-                return this.p1;
-            case 1:
-                return this.p2;
-            case 2:
-                return this.p3;
-            default:
-                throw new RangeError(`'${index}' is out of bounds'`);
-        }
+        this.points = [this.p1, this.p2, this.p3];
+        this.segments = [this.s1, this.s2, this.s3];
     }
 
     getMinX(): number {
@@ -71,42 +47,9 @@ export default class Triangle {
         return new Triangle(this.p1.copy(), this.p2.copy(), this.p3.copy());
     }
 
-    /**
-     * Returns `true` if _this_ triangle is completely outside of the rect defined by the
-     * provided args, and `false` otherwise
-     */
-    outOfBounds(
-        xMin: number,
-        xMax: number,
-        yMin: number,
-        yMax: number
-    ): boolean {
-        const x1 = this.p1.x;
-        const y1 = this.p1.y;
-        const x2 = this.p2.x;
-        const y2 = this.p2.y;
-        const x3 = this.p3.x;
-        const y3 = this.p3.y;
-
-        return (
-            (x1 < xMin && x2 < xMin && x3 < xMin) ||
-            (x1 > xMax && x2 > xMax && x3 > xMax) ||
-            (y1 < yMin && y2 < yMin && y3 < yMin) ||
-            (y1 > yMax && y2 > yMax && y3 > yMax)
-        );
-    }
-
-    /**
-     * Returns `true` if _this_ triangle is inside of the rect defined by the
-     * provided args, and `false` otherwise
-     */
-    inBounds(xMin: number, xMax: number, yMin: number, yMax: number): boolean {
-        return !this.outOfBounds(xMin, xMax, yMin, yMax);
-    }
-
     intersectsPoly(poly: Polygon): boolean {
-        for (const pSeg of poly.iterSegs()) {
-            for (const tSeg of this.iterSegs()) {
+        for (const pSeg of poly.segments) {
+            for (const tSeg of this.segments) {
                 if (tSeg.intersectsSeg(pSeg)) return true;
             }
         }
@@ -131,7 +74,7 @@ export default class Triangle {
         let abovePoints: number[] = [];
         let i = 0;
 
-        for (const point of this.iterPoints()) {
+        for (const point of this.points) {
             if (point.y < yMin) {
                 belowPoints.push(i);
             } else {
@@ -145,17 +88,17 @@ export default class Triangle {
                 // two triangles
                 const triangle2 = this.copy();
 
-                const triangle1FrontPoint = this.get(abovePoints[0]);
-                const triangle2BehindPoint = triangle2.get(belowPoints[0]);
+                const triangle1FrontPoint = this.points[abovePoints[0]];
+                const triangle2BehindPoint = triangle2.points[belowPoints[0]];
                 // i don't love this, but it works to mutate this and triangle2's points via
                 // the pointer given to the new segments
                 new Segment(
-                    triangle2.get(abovePoints[0]),
+                    triangle2.points[abovePoints[0]],
                     triangle2BehindPoint
                 ).clipNear(yMin);
                 new Segment(
-                    this.get(abovePoints[1]),
-                    this.get(belowPoints[0])
+                    this.points[abovePoints[1]],
+                    this.points[belowPoints[0]]
                 ).clipNear(yMin);
 
                 triangle1FrontPoint.x = triangle2BehindPoint.x;
@@ -174,11 +117,11 @@ export default class Triangle {
 
             case 2:
                 // just one triangle
-                const frontPoint = this.get(abovePoints[0]);
-                new Segment(frontPoint, this.get(belowPoints[0])).clipNear(
+                const frontPoint = this.points[abovePoints[0]];
+                new Segment(frontPoint, this.points[belowPoints[0]]).clipNear(
                     yMin
                 );
-                new Segment(frontPoint, this.get(belowPoints[1])).clipNear(
+                new Segment(frontPoint, this.points[belowPoints[1]]).clipNear(
                     yMin
                 );
                 return [this];
@@ -203,7 +146,7 @@ export default class Triangle {
         let abovePoints: number[] = [];
         let i = 0;
 
-        for (const point of this.iterPoints()) {
+        for (const point of this.points) {
             if (point.y < yMin) {
                 belowPoints.push(i);
             } else {
@@ -218,12 +161,12 @@ export default class Triangle {
                 const t2 = this.copy();
                 const a2 = [{ ...a[0] }, { ...a[1] }, { ...a[2] }];
 
-                const t1BelowPoint = this.get(belowPoints[0]);
-                const t1AbovePoint1 = this.get(abovePoints[0]);
-                const t1AbovePoint2 = this.get(abovePoints[1]);
+                const t1BelowPoint = this.points[belowPoints[0]];
+                const t1AbovePoint1 = this.points[abovePoints[0]];
+                const t1AbovePoint2 = this.points[abovePoints[1]];
 
-                const t2BelowPoint = t2.get(belowPoints[0]);
-                const t2AbovePoint1 = t2.get(abovePoints[0]);
+                const t2BelowPoint = t2.points[belowPoints[0]];
+                const t2AbovePoint1 = t2.points[abovePoints[0]];
 
                 // i don't love this, but it works to mutate this and triangle2's points via
                 // the pointer given to the new segments
@@ -255,9 +198,9 @@ export default class Triangle {
 
             case 2:
                 // just one triangle - one point above, two points below
-                const abovePoint = this.get(abovePoints[0]);
-                const belowPoint1 = this.get(belowPoints[0]);
-                const belowPoint2 = this.get(belowPoints[1]);
+                const abovePoint = this.points[abovePoints[0]];
+                const belowPoint1 = this.points[belowPoints[0]];
+                const belowPoint2 = this.points[belowPoints[1]];
 
                 new Segment(abovePoint, belowPoint1).clipNearAttr(
                     yMin,

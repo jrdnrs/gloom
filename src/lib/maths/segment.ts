@@ -1,33 +1,16 @@
 import { Attributes } from "../../index";
-import type Polygon from "./poly";
+import type { Polygon } from "./poly";
 import Vec2 from "./vec2";
 
 export default class Segment {
     p1: Vec2;
     p2: Vec2;
+    points: Vec2[];
 
     constructor(p1: Vec2, p2: Vec2) {
         this.p1 = p1;
         this.p2 = p2;
-    }
-
-    *iterPoints(): Generator<Vec2> {
-        yield this.p1;
-        yield this.p2;
-    }
-
-    /**
-     * Returns specified point in _this_ segment
-     */
-    get(index: number): Vec2 {
-        switch (index) {
-            case 0:
-                return this.p1;
-            case 1:
-                return this.p2;
-            default:
-                throw new RangeError(`'${index}' is out of bounds'`);
-        }
+        this.points = [this.p1, this.p2];
     }
 
     getMinX(): number {
@@ -51,6 +34,25 @@ export default class Segment {
      */
     copy(): Segment {
         return new Segment(this.p1.copy(), this.p2.copy());
+    }
+
+    /**
+     * Round _this_ segment's coordinates to the nearest int
+     */
+    round(): this {
+        this.p1.round();
+        this.p2.round();
+        return this;
+    }
+
+    rotate(
+        rad: number,
+        sin: number = Math.sin(rad),
+        cos: number = Math.cos(rad)
+    ): this {
+        this.p1.rotate(rad, sin, cos);
+        this.p2.rotate(rad, sin, cos);
+        return this;
     }
 
     /**
@@ -106,51 +108,11 @@ export default class Segment {
         return new Vec2(x1 + t * (x2 - x1), y1 + t * (y2 - y1));
     }
 
-    /**
-     * Returns `true` if _this_ segment is completely outside of the rect defined by the
-     * provided args, and `false` otherwise
-     */
-    outOfBounds(
-        xMin: number,
-        xMax: number,
-        yMin: number,
-        yMax: number
-    ): boolean {
-        const x1 = this.p1.x;
-        const y1 = this.p1.y;
-        const x2 = this.p2.x;
-        const y2 = this.p2.y;
-
-        return (
-            (x1 < xMin && x2 < xMin) ||
-            (x1 > xMax && x2 > xMax) ||
-            (y1 < yMin && y2 < yMin) ||
-            (y1 > yMax && y2 > yMax)
-        );
-    }
-
-    /**
-     * Returns `true` if _this_ segment is inside of the rect defined by the
-     * provided args, and `false` otherwise
-     */
-    inBounds(xMin: number, xMax: number, yMin: number, yMax: number): boolean {
-        return !this.outOfBounds(xMin, xMax, yMin, yMax);
-    }
-
     intersectsPoly(poly: Polygon): boolean {
-        for (const seg of poly.iterSegs()) {
+        for (const seg of poly.segments) {
             if (this.intersectsSeg(seg)) return true;
         }
         return false;
-    }
-
-    /**
-     * Round _this_ segment's coordinates to the nearest int
-     */
-    round(): this {
-        this.p1.round();
-        this.p2.round();
-        return this;
     }
 
     /**
@@ -162,7 +124,7 @@ export default class Segment {
         const x2 = this.p2.x;
         const y2 = this.p2.y;
 
-        for (let p of this.iterPoints()) {
+        for (let p of this.points) {
             if (p.y < yMin) {
                 p.y = yMin;
                 p.x = ((x2 - x1) / (y2 - y1)) * (yMin - y1) + x1;
@@ -220,7 +182,7 @@ export default class Segment {
         const x2 = this.p2.x;
         const y2 = this.p2.y;
 
-        for (let p of this.iterPoints()) {
+        for (let p of this.points) {
             if (p.x < xMin) {
                 p.x = xMin;
                 p.y = ((y2 - y1) / (x2 - x1)) * (xMin - x1) + y1;

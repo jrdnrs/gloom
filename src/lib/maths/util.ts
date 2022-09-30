@@ -24,6 +24,10 @@ export function toRadians(degrees: number): number {
     return Math.PI * (degrees / 180);
 }
 
+export function toDegrees(radians: number): number {
+    return 180 * (radians / Math.PI);
+}
+
 export function average(values: number[]): number {
     return (
         values.reduce((prev, curr) => {
