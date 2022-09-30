@@ -7,8 +7,10 @@ import {
     VFOV,
     VIEW_SPACE,
     WIREFRAME,
-    CAMERA,
+    PLAYER,
+    SCREEN_SPACE,
 } from "./index";
+import { SATtest } from "./collision";
 import Quad from "./lib/maths/quad";
 import Segment from "./lib/maths/segment";
 import Triangle from "./lib/maths/triangle";
@@ -22,18 +24,20 @@ export interface Renderable {
 
 // TODO: stop using this
 function perspectiveProjectionSeg(segment: Segment, zOffset: number): Segment {
-    for (let point of segment.iterPoints()) {
+    for (let point of segment.points) {
         const depth = point.y;
 
         if (depth <= 0)
             throw `perspective divide failed, '${depth}' depth is invalid`;
 
-        // - `CAMERA.pitch * depth` is used to mimic real pitch using Y-shearing.
-        // - Adding `CAMERA.height` here instead of negating it because otherwise up would be negative Z
+        // - `PLAYER.camera.pitch * depth` is used to mimic real pitch using Y-shearing.
+        // - Adding `PLAYER.camera.height` here instead of negating it because otherwise up would be negative Z
         //   and that's weird
         point.x = (point.x * HFOV) / depth;
         point.y =
-            ((zOffset + CAMERA.zOffset + CAMERA.pitch * depth) * VFOV) / depth;
+            ((zOffset + PLAYER.camera.zOffset + PLAYER.camera.pitchTan * depth) *
+                VFOV) /
+            depth;
 
         // set centre of screen as new origin
         point.x += WIDTH / 2;
@@ -49,12 +53,14 @@ function perspectiveProjection(point: Vec2, zOffset: number): Vec2 {
     if (depth <= 0)
         throw `perspective divide failed, '${depth}' depth is invalid`;
 
-    // - `CAMERA.pitch * depth` is used to mimic real pitch using Y-shearing.
-    // - Adding `CAMERA.height` here instead of negating it because otherwise up would be negative Z
+    // - `PLAYER.camera.pitch * depth` is used to mimic real pitch using Y-shearing.
+    // - Adding `PLAYER.camera.height` here instead of negating it because otherwise up would be negative Z
     //   and that's weird
     point.x = (point.x * HFOV) / depth;
     point.y =
-        ((zOffset + CAMERA.zOffset + CAMERA.pitch * depth) * VFOV) / depth;
+        ((zOffset + PLAYER.camera.zOffset + PLAYER.camera.pitchTan * depth) *
+            VFOV) /
+        depth;
 
     // set centre of screen as new origin
     point.x += WIDTH / 2;
@@ -68,8 +74,8 @@ export function drawFloors(floors: Floor[]) {
         const transformed = floor.points.map((p) => {
             return p
                 .copy()
-                .sub(CAMERA.pos)
-                .rotate(0, CAMERA.yawSin, CAMERA.yawCos);
+                .sub(PLAYER.camera.pos)
+                .rotate(0, PLAYER.camera.yawSin, PLAYER.camera.yawCos);
         });
 
         let triangles: Triangle[] = [];
@@ -103,14 +109,7 @@ export function drawFloors(floors: Floor[]) {
             ];
 
             // view space culling check
-            if (
-                !(
-                    tri.intersectsPoly(VIEW_SPACE) ||
-                    tri.p1.inPoly(VIEW_SPACE) ||
-                    tri.p2.inPoly(VIEW_SPACE) ||
-                    tri.p3.inPoly(VIEW_SPACE)
-                )
-            ) {
+            if (!SATtest(tri, VIEW_SPACE)) {
                 continue;
             }
 
@@ -121,12 +120,12 @@ export function drawFloors(floors: Floor[]) {
         }
 
         for (const [i, tri] of triangles.entries()) {
-            for (const point of tri.iterPoints()) {
+            for (const point of tri.points) {
                 perspectiveProjection(point, -floor.zOffset);
             }
 
             // screen space culling check
-            if (tri.outOfBounds(0, WIDTH, 0, HEIGHT)) {
+            if (!SATtest(tri, SCREEN_SPACE)) {
                 continue;
             }
 
@@ -135,7 +134,7 @@ export function drawFloors(floors: Floor[]) {
             textureTriangle(tri, a[0], a[1], a[2], floor.texture!, floor.alpha);
 
             if (WIREFRAME) {
-                for (const seg of tri.iterSegs()) {
+                for (const seg of tri.segments) {
                     drawSegment(
                         seg.copy().clipRect(0, WIDTH, 0, HEIGHT).round(),
                         MAGENTA,
@@ -156,12 +155,12 @@ export function drawWalls(walls: Wall[]) {
         const segment = new Segment(
             wall.seg.p1
                 .copy()
-                .sub(CAMERA.pos)
-                .rotate(0, CAMERA.yawSin, CAMERA.yawCos),
+                .sub(PLAYER.camera.pos)
+                .rotate(0, PLAYER.camera.yawSin, PLAYER.camera.yawCos),
             wall.seg.p2
                 .copy()
-                .sub(CAMERA.pos)
-                .rotate(0, CAMERA.yawSin, CAMERA.yawCos)
+                .sub(PLAYER.camera.pos)
+                .rotate(0, PLAYER.camera.yawSin, PLAYER.camera.yawCos)
         );
 
         wall.distance = Math.sqrt(
@@ -192,8 +191,6 @@ export function drawWalls(walls: Wall[]) {
         };
 
         // important to do this as negative Y values can create artefacts during perspective division
-        // TODO: this clipping is causing issues with texture mapping, we might need to store the texture
-        //       coords and clip those too
         if (segment.p1.y < NEAR || segment.p2.y < NEAR) {
             segment.clipNearAttr(NEAR, a1, a2);
         }
@@ -204,23 +201,18 @@ export function drawWalls(walls: Wall[]) {
 
         // using +/- half of wall height to split it at the horizon (middle of screen)
         // negating the zOffset (Y in screen space) as positive Y is down in screen space
-        const bottom = perspectiveProjectionSeg(
-            segment.copy(),
-            wall.height / 2 - wall.zOffset
-        );
+        const bottom = perspectiveProjectionSeg(segment.copy(), -wall.zOffset);
         const top = perspectiveProjectionSeg(
             segment.copy(),
-            -wall.height / 2 - wall.zOffset
+            -(wall.height + wall.zOffset)
         );
 
         // with a more sophisticated visibility check we could do this earlier,
         // but for now check if its out of screen space will do
         if (
-            new Quad(bottom.p1, bottom.p2, top.p1, top.p2).outOfBounds(
-                0,
-                WIDTH,
-                0,
-                HEIGHT
+            !SATtest(
+                new Quad(bottom.p1, bottom.p2, top.p1, top.p2),
+                SCREEN_SPACE
             )
         ) {
             continue;

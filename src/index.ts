@@ -20,9 +20,18 @@ import Segment from "./lib/maths/segment";
 import Texture from "./texture";
 import { drawFloors, drawWalls, sortRenderables } from "./render";
 import Player from "./player";
+import { floorCollisionResolution, wallCollisionResolution } from "./collision";
+import Quad from "./lib/maths/quad";
 
 export const WIDTH = 480;
 export const HEIGHT = 320;
+
+export const SCREEN_SPACE = new Quad(
+    new Vec2(0, 0),
+    new Vec2(WIDTH - 1, 0),
+    new Vec2(WIDTH - 1, HEIGHT - 1),
+    new Vec2(0, HEIGHT - 1)
+);
 
 export const NEAR = 10;
 export const FAR = 10_000;
@@ -240,7 +249,12 @@ function drawFrametimeGraph() {
 }
 
 function draw(dt: number) {
-    CAMERA.update(dt);
+    // TODO: temp hack until better solution. this fixes tunneling from large movements that occur due to 
+    //       being scaled with a very large dt. dt should be relatively small, though it can get very large
+    //       if the user makes the tab inactive for a time
+    if (dt < 1000) {
+        tick(dt)
+    }
 
     // TODO: firefox seems to interpret the `getContext().options.alpha` property differently?
     //       even when it is disabled, it still applies the alpha channel when rendering, so filling with
@@ -270,11 +284,30 @@ function draw(dt: number) {
         PLAYER.camera.drawStats();
         PLAYER.drawStats();
 
+        // CTX.fillText("collision", 5, 70);
+        // if (wallCollision) {
+        //     CTX.fillText("wall:  true", 5, 80);
+        // } else {
+        //     CTX.fillText("wall:  false", 5, 80);
+        // }
+        // if (floorCollision) {
+        //     CTX.fillText("floor: true", 5, 90);
+        // } else {
+        //     CTX.fillText("floor: false", 5, 90);
+        // }
+
         drawFps();
 
         // TODO: FPS limiting is clearly not perfect
         drawFrametimeGraph();
     }
+}
+
+function tick(dt: number) {
+    PLAYER.update(dt);
+
+    wallCollisionResolution(walls);
+    floorCollisionResolution(floors);
 }
 
 init().then(() => DRAW.run(draw));
