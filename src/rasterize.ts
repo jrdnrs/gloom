@@ -2,7 +2,7 @@ import {
     Attributes,
     FAR,
     FRAMEBUFFER,
-    DEPTH_BUFFER,
+    DEPTHBUFFER,
     HEIGHT,
     WIDTH,
 } from "./index";
@@ -111,7 +111,7 @@ export function fillTriangle(
     colour: Colour,
     alpha?: number
 ) {
-    let [p1, p2, p3] = triangle.iterPoints();
+    let [p1, p2, p3] = triangle.points;
     // line 1 = p1 to p2
     // line 2 = p2 to p3
     // line 3 = p1 to p3 (longest, from top to bottom in screen space, increasing in Y)
@@ -244,7 +244,7 @@ export function textureTriangle(
     texture: Texture,
     alpha?: number
 ) {
-    let [p1, p2, p3] = triangle.iterPoints();
+    let [p1, p2, p3] = triangle.points;
     // line 1 = p1 to p2
     // line 2 = p2 to p3
     // line 3 = p1 to p3 (from top to bottom in screen space, increasing in Y)
@@ -360,8 +360,8 @@ export function textureTriangle(
             let v = vStart + vM * (xStartClamp - xStart);
 
             for (let x = xStartClamp; x < xEndClamp; x++) {
-                if (DEPTH_BUFFER[y * WIDTH + x] < dInverse) {
-                    DEPTH_BUFFER[y * WIDTH + x] = dInverse;
+                if (DEPTHBUFFER[y * WIDTH + x] < dInverse) {
+                    DEPTHBUFFER[y * WIDTH + x] = dInverse;
 
                     const textureX = round(u * d * w) % w;
                     const textureY = round(v * d * h) % h;
@@ -478,8 +478,8 @@ export function textureTriangle(
             let v = vStart + vM * (xStartClamp - xStart);
 
             for (let x = xStartClamp; x < xEndClamp; x++) {
-                if (DEPTH_BUFFER[y * WIDTH + x] < dInverse) {
-                    DEPTH_BUFFER[y * WIDTH + x] = dInverse;
+                if (DEPTHBUFFER[y * WIDTH + x] < dInverse) {
+                    DEPTHBUFFER[y * WIDTH + x] = dInverse;
 
                     const textureX = round(u * d * w) % w;
                     const textureY = round(v * d * h) % h;
@@ -626,8 +626,8 @@ export function textureWall(
             const light = 1;
 
             for (let y = yStartClamp; y < yEndClamp; y++) {
-                if (DEPTH_BUFFER[y * WIDTH + x] < dInverse) {
-                    DEPTH_BUFFER[y * WIDTH + x] = dInverse;
+                if (DEPTHBUFFER[y * WIDTH + x] < dInverse) {
+                    DEPTHBUFFER[y * WIDTH + x] = dInverse;
 
                     const textureY = round(v * w) % w;
 

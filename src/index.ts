@@ -86,7 +86,7 @@ const BUFFER_CTX = BUFFER_CANVAS.getContext("2d", {
     alpha: config.alpha,
 })!;
 
-export const DEPTH_BUFFER = new Array<number>(WIDTH * HEIGHT);
+export const DEPTHBUFFER = new Array<number>(WIDTH * HEIGHT);
 export const FRAMEBUFFER = new Uint8ClampedArray(WIDTH * HEIGHT * 4);
 const IMAGE = new ImageData(FRAMEBUFFER, WIDTH, HEIGHT);
 
@@ -260,7 +260,7 @@ function draw(dt: number) {
     //       even when it is disabled, it still applies the alpha channel when rendering, so filling with
     //       32 makes everything look dark and faded on firefox but is fine on chrome
     FRAMEBUFFER.fill(32);
-    DEPTH_BUFFER.fill(0);
+    DEPTHBUFFER.fill(0);
 
     // sort the walls/floors from nearest to farthest,
     // based on the distance calculation from the previous frame
