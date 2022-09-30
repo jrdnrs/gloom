@@ -18,8 +18,8 @@ import Vec2 from "./lib/maths/vec2";
 import { Wall, Floor, YELLOW, BLUE, GREEN, MAGENTA, RED } from "./surface";
 import Segment from "./lib/maths/segment";
 import Texture from "./texture";
-import Camera from "./camera";
 import { drawFloors, drawWalls, sortRenderables } from "./render";
+import Player from "./player";
 
 export const WIDTH = 480;
 export const HEIGHT = 320;
@@ -81,7 +81,7 @@ export const DEPTH_BUFFER = new Array<number>(WIDTH * HEIGHT);
 export const FRAMEBUFFER = new Uint8ClampedArray(WIDTH * HEIGHT * 4);
 const IMAGE = new ImageData(FRAMEBUFFER, WIDTH, HEIGHT);
 
-export const CAMERA = new Camera();
+export const PLAYER = new Player();
 
 export const TEXTURES: Texture[] = [];
 
@@ -267,7 +267,8 @@ function draw(dt: number) {
     }
 
     if (OVERLAY) {
-        CAMERA.drawStats();
+        PLAYER.camera.drawStats();
+        PLAYER.drawStats();
 
         drawFps();
 
