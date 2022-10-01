@@ -9,6 +9,8 @@ import {
     WIREFRAME,
     PLAYER,
     SCREEN_SPACE,
+    FAR,
+    HFOVdegrees,
 } from "./index";
 import { SATtest } from "./collision";
 import Quad from "./lib/maths/quad";
@@ -16,7 +18,8 @@ import Segment from "./lib/maths/segment";
 import Triangle from "./lib/maths/triangle";
 import Vec2 from "./lib/maths/vec2";
 import { textureTriangle, drawSegment, textureWall } from "./rasterise";
-import { MAGENTA, Floor, Wall } from "./surface";
+import { MAGENTA, Floor, Wall, BLUE } from "./surface";
+import Texture from "./texture";
 
 export interface Renderable {
     distance: number;
@@ -35,7 +38,9 @@ function perspectiveProjectionSeg(segment: Segment, zOffset: number): Segment {
         //   and that's weird
         point.x = (point.x * HFOV) / depth;
         point.y =
-            ((zOffset + PLAYER.camera.zOffset + PLAYER.camera.pitchTan * depth) *
+            ((zOffset +
+                PLAYER.camera.zOffset +
+                PLAYER.camera.pitchTan * depth) *
                 VFOV) /
             depth;
 
@@ -235,4 +240,43 @@ export function drawWalls(walls: Wall[]) {
             );
         }
     }
+}
+
+export function drawSky(texture: Texture, rot: number) {
+    let top = new Segment(new Vec2(0, 0), new Vec2(WIDTH, 0));
+    let bottom = new Segment(new Vec2(0, HEIGHT), new Vec2(WIDTH, HEIGHT));
+
+    const yShear = PLAYER.camera.pitchTan * VFOV;
+
+    bottom.p1.y = yShear;
+    bottom.p2.y = yShear;
+    top.p1.y = yShear;
+    top.p2.y = yShear;
+
+    bottom.p1.y += HEIGHT * 0.67;
+    bottom.p2.y += HEIGHT * 0.67;
+    top.p1.y -= HEIGHT * 1.33;
+    top.p2.y -= HEIGHT * 1.33;
+
+    let a1 = {
+        u: 0,
+        v: 0,
+        d: 1_000_000,
+    };
+    let a2 = {
+        u: 1,
+        v: 1,
+        d: 1_000_000,
+    };
+
+    const coordWidth = HFOVdegrees / 2 / 360;
+    const angle = (PLAYER.camera.yaw + rot) % 360;
+    const midCoord = angle / 360;
+    const firstCoord = midCoord - coordWidth + 2;
+    const lastCoord = midCoord + coordWidth + 2;
+
+    a1.u = firstCoord;
+    a2.u = lastCoord;
+
+    textureWall(bottom, top, a1, a2, texture);
 }

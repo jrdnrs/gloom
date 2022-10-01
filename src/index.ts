@@ -18,7 +18,7 @@ import Vec2 from "./lib/maths/vec2";
 import { Wall, Floor, YELLOW, BLUE, GREEN, MAGENTA, RED } from "./surface";
 import Segment from "./lib/maths/segment";
 import Texture from "./texture";
-import { drawFloors, drawWalls, sortRenderables } from "./render";
+import { drawFloors, drawSky, drawWalls, sortRenderables } from "./render";
 import Player from "./player";
 import { floorCollisionResolution, wallCollisionResolution } from "./collision";
 import Quad from "./lib/maths/quad";
@@ -35,9 +35,11 @@ export const SCREEN_SPACE = new Quad(
 
 export const NEAR = 10;
 export const FAR = 10_000;
-export let VIEW_SPACE = viewTrapezium(NEAR, FAR, toRadians(75));
-export let HFOV = 1 / Math.tan(toRadians(75 / WIDTH));
-export let VFOV = 1 / Math.tan(toRadians(75 / WIDTH));
+export let HFOVdegrees = 75;
+export let VFOVdegrees = 75;
+export let HFOV = 1 / Math.tan(toRadians(HFOVdegrees / WIDTH));
+export let VFOV = 1 / Math.tan(toRadians(VFOVdegrees / WIDTH));
+export let VIEW_SPACE = viewTrapezium(NEAR, FAR, toRadians(HFOVdegrees));
 
 // DEBUG
 /////////////////////////////////////////////////////////////////
@@ -55,13 +57,15 @@ lockPitch.addEventListener("input", (ev) => {
 
 hFovSlider.addEventListener("input", (ev) => {
     const deg = (ev.target as HTMLInputElement).valueAsNumber;
-    HFOV = 1 / Math.tan(toRadians(deg / WIDTH));
-    VIEW_SPACE = viewTrapezium(NEAR, FAR, toRadians(deg));
+    HFOVdegrees = deg;
+    HFOV = 1 / Math.tan(toRadians(HFOVdegrees / WIDTH));
+    VIEW_SPACE = viewTrapezium(NEAR, FAR, toRadians(HFOVdegrees));
 });
 
 vFovSlider.addEventListener("input", (ev) => {
     const deg = (ev.target as HTMLInputElement).valueAsNumber;
-    VFOV = 1 / Math.tan(toRadians(deg / WIDTH));
+    VFOVdegrees = deg; 
+    VFOV = 1 / Math.tan(toRadians(VFOVdegrees / WIDTH));
 });
 
 /////////////////////////////////////////////////////////////////
@@ -105,6 +109,7 @@ const DEFAULT_WALL_TEX_COORDS = [new Vec2(0, 0), new Vec2(1, 1)];
 let walls: Wall[] = [];
 let floors: Floor[] = [];
 
+
 async function init() {
     await loadTextures();
     loadData();
@@ -119,6 +124,7 @@ async function loadTextures() {
         "/res/grass_2.png",
         "/res/grass_3.png",
         "/res/blue.png",
+        "/res/sky.png",
     ];
 
     for (const path of texturePaths) {
@@ -297,6 +303,7 @@ function draw(dt: number) {
 
     drawWalls(walls);
     drawFloors(floors);
+    drawSky(TEXTURES[7], DRAW.timeElapsed / 1000)
 
     BUFFER_CTX.putImageData(IMAGE, 0, 0);
     CTX.drawImage(BUFFER_CANVAS, 0, 0);
