@@ -363,8 +363,8 @@ export function textureTriangle(
                 if (DEPTHBUFFER[y * WIDTH + x] < dInverse) {
                     DEPTHBUFFER[y * WIDTH + x] = dInverse;
 
-                    const textureX = round(u * d * w) % w;
-                    const textureY = round(v * d * h) % h;
+                    const textureX = Math.floor(u * d * w) % w;
+                    const textureY = Math.floor(v * d * h) % h;
 
                     // readOffset assumes the bytes are normal orientation (not transposed like walls)
                     const readOffset = (textureY * w + textureX) * 4;
@@ -409,8 +409,8 @@ export function textureTriangle(
             let v = vStart + vM * (xStartClamp - xStart);
 
             for (let x = xStartClamp; x < xEndClamp; x++) {
-                const textureX = round(u * d * w) % w;
-                const textureY = round(v * d * h) % h;
+                    const textureX = Math.floor(u * d * w) % w;
+                    const textureY = Math.floor(v * d * h) % h;
 
                 // readOffset assumes the bytes are normal orientation (not transposed like walls)
                 const readOffset = (textureY * w + textureX) * 4;
@@ -481,8 +481,8 @@ export function textureTriangle(
                 if (DEPTHBUFFER[y * WIDTH + x] < dInverse) {
                     DEPTHBUFFER[y * WIDTH + x] = dInverse;
 
-                    const textureX = round(u * d * w) % w;
-                    const textureY = round(v * d * h) % h;
+                    const textureX = Math.floor(u * d * w) % w;
+                    const textureY = Math.floor(v * d * h) % h;
 
                     // readOffset assumes the bytes are normal orientation (not transposed like walls)
                     const readOffset = (textureY * w + textureX) * 4;
@@ -527,8 +527,8 @@ export function textureTriangle(
             let v = vStart + vM * (xStartClamp - xStart);
 
             for (let x = xStartClamp; x < xEndClamp; x++) {
-                const textureX = round(u * d * w) % w;
-                const textureY = round(v * d * h) % h;
+                    const textureX = Math.floor(u * d * w) % w;
+                    const textureY = Math.floor(v * d * h) % h;
 
                 // readOffset assumes the bytes are normal orientation (not transposed like walls)
                 const readOffset = (textureY * w + textureX) * 4;
@@ -615,7 +615,7 @@ export function textureWall(
 
     if (alpha === undefined) {
         for (let x = xStartClamp; x < xEndClamp; x++) {
-            const textureX = round((u / dInverse) * h) % h;
+            const textureX = Math.floor((u / dInverse) * h) % h;
             const yStartClamp = clamp(Math.ceil(yStart), 0, HEIGHT);
             const yEndClamp = clamp(Math.ceil(yEnd), 0, HEIGHT);
             const vM = vDelta / (yEnd - yStart);
@@ -629,7 +629,7 @@ export function textureWall(
                 if (DEPTHBUFFER[y * WIDTH + x] < dInverse) {
                     DEPTHBUFFER[y * WIDTH + x] = dInverse;
 
-                    const textureY = round(v * w) % w;
+                    const textureY = Math.floor(v * w) % w;
 
                     // readOffset offset assumes the bytes are transposed (rotated 90 anticlockwise)
                     const readOffset = (textureX * w + textureY) * 4;
@@ -656,7 +656,7 @@ export function textureWall(
         const omAlpha = 1 - alpha;
 
         for (let x = xStartClamp; x < xEndClamp; x++) {
-            const textureX = round((u / dInverse) * h) % h;
+            const textureX = Math.floor((u / dInverse) * h) % h;
             const yStartClamp = clamp(Math.ceil(yStart), 0, HEIGHT);
             const yEndClamp = clamp(Math.ceil(yEnd), 0, HEIGHT);
             const vM = vDelta / (yEnd - yStart);
@@ -667,7 +667,7 @@ export function textureWall(
             const light = 1;
 
             for (let y = yStartClamp; y < yEndClamp; y++) {
-                const textureY = round(v * w) % w;
+                    const textureY = Math.floor(v * w) % w;
 
                 // readOffset assumes the bytes are transposed (rotated 90 anticlockwise)
                 const readOffset = (textureX * w + textureY) * 4;
