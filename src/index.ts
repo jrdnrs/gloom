@@ -91,7 +91,7 @@ const BUFFER_CTX = BUFFER_CANVAS.getContext("2d", {
 })!;
 
 export const DEPTHBUFFER = new Array<number>(WIDTH * HEIGHT);
-export const FRAMEBUFFER = new Uint8ClampedArray(WIDTH * HEIGHT * 4);
+export const FRAMEBUFFER = new Uint8ClampedArray(WIDTH * HEIGHT * 4).fill(255);
 const IMAGE = new ImageData(FRAMEBUFFER, WIDTH, HEIGHT);
 
 export const PLAYER = new Player();
@@ -290,10 +290,6 @@ function draw(dt: number) {
         tick(dt)
     }
 
-    // TODO: firefox seems to interpret the `getContext().options.alpha` property differently?
-    //       even when it is disabled, it still applies the alpha channel when rendering, so filling with
-    //       32 makes everything look dark and faded on firefox but is fine on chrome
-    FRAMEBUFFER.fill(32);
     DEPTHBUFFER.fill(0);
 
     // sort the walls/floors from nearest to farthest,
