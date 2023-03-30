@@ -1,6 +1,6 @@
-import { average, roundDown } from "./maths/util";
-import Input from "./input/input";
-import type Vec2 from "./maths/vec2";
+import { average, roundDown } from "../maths/util";
+import Input from "../input/input";
+import type Vec2 from "../maths/vec2";
 
 /**
  *  number of previous frametimes to cache

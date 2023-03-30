@@ -42,6 +42,40 @@ export const MAGENTA = {
     b: 192,
 };
 
+export class Thing {
+    point: Vec2;
+    textureCoords: Vec2[];
+    width: number;
+    height: number;
+    zOffset: number;
+    colour: Colour;
+    distance: number;
+    alpha: boolean;
+    texture?: Texture;
+
+    constructor(
+        point: Vec2,
+        textureCoords: Vec2[],
+        width: number,
+        height: number,
+        zOffset: number,
+        colour: Colour,
+        alpha: boolean,
+        texture?: Texture,
+    ) {
+        this.point = point;
+        this.textureCoords = textureCoords;
+        this.width = width;
+        this.height = height;
+        this.zOffset = zOffset;
+        this.colour = colour;
+        this.distance = 0;
+
+        this.alpha = alpha;
+        this.texture = texture;
+    }
+}
+
 export class Wall {
     seg: Segment;
     textureCoords: Vec2[];
@@ -49,8 +83,8 @@ export class Wall {
     zOffset: number;
     colour: Colour;
     distance: number;
+    alpha: boolean;
     texture?: Texture;
-    alpha?: number;
 
     constructor(
         seg: Segment,
@@ -58,8 +92,8 @@ export class Wall {
         height: number,
         zOffset: number,
         colour: Colour,
+        alpha: boolean,
         texture?: Texture,
-        alpha?: number
     ) {
         this.seg = seg;
         this.textureCoords = textureCoords;
@@ -68,8 +102,8 @@ export class Wall {
         this.colour = colour;
         this.distance = 0;
 
-        this.texture = texture;
         this.alpha = alpha;
+        this.texture = texture;
     }
 }
 
@@ -81,8 +115,8 @@ export class Floor {
     zOffset: number;
     colour: Colour;
     distance: number;
+    alpha: boolean;
     texture?: Texture;
-    alpha?: number;
 
     constructor(
         points: Vec2[],
@@ -90,8 +124,8 @@ export class Floor {
         indices: number[],
         zOffset: number,
         colour: Colour,
+        alpha: boolean,
         texture?: Texture,
-        alpha?: number
     ) {
         this.points = points;
         this.poly = new Poly(this.points);
@@ -101,7 +135,7 @@ export class Floor {
         this.colour = colour;
         this.distance = 0;
 
-        this.texture = texture;
         this.alpha = alpha;
+        this.texture = texture;
     }
 }

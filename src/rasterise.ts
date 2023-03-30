@@ -68,7 +68,7 @@ export function drawVerticalSegment(
     y1: number,
     y2: number,
     colour: Colour,
-    alpha?: number
+    alpha = 1
 ) {
     [y1, y2] = y2 > y1 ? [y1, y2] : [y2, y1];
 
@@ -88,7 +88,7 @@ export function drawHorizontalSegment(
     x1: number,
     x2: number,
     colour: Colour,
-    alpha?: number
+    alpha = 1
 ) {
     [x1, x2] = x2 > x1 ? [x1, x2] : [x2, x1];
 
@@ -109,7 +109,7 @@ export function fillTriangle(
     a2: Attributes,
     a3: Attributes,
     colour: Colour,
-    alpha?: number
+    alpha = 1
 ) {
     let [p1, p2, p3] = triangle.points;
     // line 1 = p1 to p2
@@ -149,16 +149,15 @@ export function fillTriangle(
         if (!((xStart >= WIDTH && xEnd >= WIDTH) || (xStart < 0 && xEnd < 0))) {
             // basic diminishing lighting
             const relativeDepth = 1 / (dInverse * FAR);
-            const light = 1;
 
             drawHorizontalSegment(
                 y,
                 round(clamp(xStart, 0, WIDTH - 1)),
                 round(clamp(xEnd, 0, WIDTH - 1)),
                 {
-                    r: colour.r * light,
-                    g: colour.g * light,
-                    b: colour.b * light,
+                    r: colour.r,
+                    g: colour.g,
+                    b: colour.b,
                 },
                 alpha
             );
@@ -176,16 +175,15 @@ export function fillTriangle(
         if (!((xStart >= WIDTH && xEnd >= WIDTH) || (xStart < 0 && xEnd < 0))) {
             // basic diminishing lighting
             const relativeDepth = 1 / (dInverse * FAR);
-            const light = 1;
 
             drawHorizontalSegment(
                 y,
                 round(clamp(xStart, 0, WIDTH - 1)),
                 round(clamp(xEnd, 0, WIDTH - 1)),
                 {
-                    r: colour.r * light,
-                    g: colour.g * light,
-                    b: colour.b * light,
+                    r: colour.r,
+                    g: colour.g,
+                    b: colour.b,
                 },
                 alpha
             );
@@ -198,12 +196,7 @@ export function fillTriangle(
 }
 
 // TODO: add diminishing lighting / update to use Attributes
-export function fillWall(
-    s1: Segment,
-    s2: Segment,
-    colour: Colour,
-    alpha?: number
-) {
+export function fillWall(s1: Segment, s2: Segment, colour: Colour, alpha = 1) {
     [s1, s2] = s1.p1.y < s2.p1.y ? [s1, s2] : [s2, s1];
 
     const xStart = s1.p1.x;
@@ -242,7 +235,7 @@ export function textureTriangle(
     a2: Attributes,
     a3: Attributes,
     texture: Texture,
-    alpha?: number
+    alpha = false
 ) {
     let [p1, p2, p3] = triangle.points;
     // line 1 = p1 to p2
@@ -344,7 +337,7 @@ export function textureTriangle(
     let vEnd = v1 + rightvM * (y1Clamp - y1);
     let dInverse = d1Inverse + dInverseM * (y1Clamp - y1);
 
-    if (alpha === undefined) {
+    if (!alpha) {
         for (let y = y1Clamp; y < y2Clamp; y++) {
             const d = 1 / dInverse;
             const xStartClamp = clamp(Math.ceil(xStart), 0, WIDTH);
@@ -352,7 +345,6 @@ export function textureTriangle(
 
             // basic diminishing lighting
             const relativeDepth = d / FAR;
-            const light = 1;
 
             const uM = (uEnd - uStart) / (xEnd - xStart);
             const vM = (vEnd - vStart) / (xEnd - xStart);
@@ -371,12 +363,11 @@ export function textureTriangle(
                     const writeOffset = (y * WIDTH + x) * 4;
 
                     // inline setPixel
-                    FRAMEBUFFER[writeOffset] =
-                        texture.bytes[readOffset] * light;
+                    FRAMEBUFFER[writeOffset] = texture.bytes[readOffset];
                     FRAMEBUFFER[writeOffset + 1] =
-                        texture.bytes[readOffset + 1] * light;
+                        texture.bytes[readOffset + 1];
                     FRAMEBUFFER[writeOffset + 2] =
-                        texture.bytes[readOffset + 2] * light;
+                        texture.bytes[readOffset + 2];
                 }
 
                 u += uM;
@@ -392,8 +383,6 @@ export function textureTriangle(
             dInverse += dInverseM;
         }
     } else {
-        const omAlpha = 1 - alpha;
-
         for (let y = y1Clamp; y < y2Clamp; y++) {
             const d = 1 / dInverse;
             const xStartClamp = clamp(Math.ceil(xStart), 0, WIDTH);
@@ -401,7 +390,6 @@ export function textureTriangle(
 
             // basic diminishing lighting
             const relativeDepth = d / FAR;
-            const light = 1;
 
             const uM = (uEnd - uStart) / (xEnd - xStart);
             const vM = (vEnd - vStart) / (xEnd - xStart);
@@ -409,23 +397,39 @@ export function textureTriangle(
             let v = vStart + vM * (xStartClamp - xStart);
 
             for (let x = xStartClamp; x < xEndClamp; x++) {
+                if (DEPTHBUFFER[y * WIDTH + x] < dInverse) {
+                    DEPTHBUFFER[y * WIDTH + x] = dInverse;
+
                     const textureX = Math.floor(u * d * w) % w;
                     const textureY = Math.floor(v * d * h) % h;
 
-                // readOffset assumes the bytes are normal orientation (not transposed like walls)
-                const readOffset = (textureY * w + textureX) * 4;
-                const writeOffset = (y * WIDTH + x) * 4;
+                    // readOffset assumes the bytes are normal orientation (not transposed like walls)
+                    const readOffset = (textureY * w + textureX) * 4;
 
-                // inline blendPixel
-                FRAMEBUFFER[writeOffset] =
-                    alpha * texture.bytes[readOffset] * light +
-                    omAlpha * FRAMEBUFFER[writeOffset];
-                FRAMEBUFFER[writeOffset + 1] =
-                    alpha * texture.bytes[readOffset + 1] * light +
-                    omAlpha * FRAMEBUFFER[writeOffset + 1];
-                FRAMEBUFFER[writeOffset + 2] =
-                    alpha * texture.bytes[readOffset + 2] * light +
-                    omAlpha * FRAMEBUFFER[writeOffset + 2];
+                    const rAlpha = texture.bytes[readOffset + 3];
+
+                    if (rAlpha > 0) {
+                        const writeOffset = (y * WIDTH + x) * 4;
+                        // const wAlpha = 1 - rAlpha;
+
+                        FRAMEBUFFER[writeOffset] = texture.bytes[readOffset];
+                        FRAMEBUFFER[writeOffset + 1] =
+                            texture.bytes[readOffset + 1];
+                        FRAMEBUFFER[writeOffset + 2] =
+                            texture.bytes[readOffset + 2];
+
+                        // inline blendPixel
+                        // FRAMEBUFFER[writeOffset] =
+                        //     rAlpha * texture.bytes[readOffset] +
+                        //     wAlpha * FRAMEBUFFER[writeOffset];
+                        // FRAMEBUFFER[writeOffset + 1] =
+                        //     rAlpha * texture.bytes[readOffset + 1] +
+                        //     wAlpha * FRAMEBUFFER[writeOffset + 1];
+                        // FRAMEBUFFER[writeOffset + 2] =
+                        //     rAlpha * texture.bytes[readOffset + 2] +
+                        //     wAlpha * FRAMEBUFFER[writeOffset + 2];
+                    }
+                }
 
                 u += uM;
                 v += vM;
@@ -462,7 +466,7 @@ export function textureTriangle(
         vStart = v2 + leftvM * (y2Clamp - y2);
     }
 
-    if (alpha === undefined) {
+    if (!alpha) {
         for (let y = y2Clamp; y < y3Clamp; y++) {
             const d = 1 / dInverse;
             const xStartClamp = clamp(Math.ceil(xStart), 0, WIDTH);
@@ -470,7 +474,6 @@ export function textureTriangle(
 
             // basic diminishing lighting
             const relativeDepth = d / FAR;
-            const light = 1;
 
             const uM = (uEnd - uStart) / (xEnd - xStart);
             const vM = (vEnd - vStart) / (xEnd - xStart);
@@ -489,12 +492,11 @@ export function textureTriangle(
                     const writeOffset = (y * WIDTH + x) * 4;
 
                     // inline setPixel
-                    FRAMEBUFFER[writeOffset] =
-                        texture.bytes[readOffset] * light;
+                    FRAMEBUFFER[writeOffset] = texture.bytes[readOffset];
                     FRAMEBUFFER[writeOffset + 1] =
-                        texture.bytes[readOffset + 1] * light;
+                        texture.bytes[readOffset + 1];
                     FRAMEBUFFER[writeOffset + 2] =
-                        texture.bytes[readOffset + 2] * light;
+                        texture.bytes[readOffset + 2];
                 }
 
                 u += uM;
@@ -510,8 +512,6 @@ export function textureTriangle(
             dInverse += dInverseM;
         }
     } else {
-        const omAlpha = 1 - alpha;
-
         for (let y = y2Clamp; y < y3Clamp; y++) {
             const d = 1 / dInverse;
             const xStartClamp = clamp(Math.ceil(xStart), 0, WIDTH);
@@ -519,7 +519,6 @@ export function textureTriangle(
 
             // basic diminishing lighting
             const relativeDepth = d / FAR;
-            const light = 1;
 
             const uM = (uEnd - uStart) / (xEnd - xStart);
             const vM = (vEnd - vStart) / (xEnd - xStart);
@@ -527,23 +526,39 @@ export function textureTriangle(
             let v = vStart + vM * (xStartClamp - xStart);
 
             for (let x = xStartClamp; x < xEndClamp; x++) {
+                if (DEPTHBUFFER[y * WIDTH + x] < dInverse) {
+                    DEPTHBUFFER[y * WIDTH + x] = dInverse;
+
                     const textureX = Math.floor(u * d * w) % w;
                     const textureY = Math.floor(v * d * h) % h;
 
-                // readOffset assumes the bytes are normal orientation (not transposed like walls)
-                const readOffset = (textureY * w + textureX) * 4;
-                const writeOffset = (y * WIDTH + x) * 4;
+                    // readOffset assumes the bytes are normal orientation (not transposed like walls)
+                    const readOffset = (textureY * w + textureX) * 4;
 
-                // inline blendPixel
-                FRAMEBUFFER[writeOffset] =
-                    alpha * texture.bytes[readOffset] * light +
-                    omAlpha * FRAMEBUFFER[writeOffset];
-                FRAMEBUFFER[writeOffset + 1] =
-                    alpha * texture.bytes[readOffset + 1] * light +
-                    omAlpha * FRAMEBUFFER[writeOffset + 1];
-                FRAMEBUFFER[writeOffset + 2] =
-                    alpha * texture.bytes[readOffset + 2] * light +
-                    omAlpha * FRAMEBUFFER[writeOffset + 2];
+                    const rAlpha = texture.bytes[readOffset + 3];
+
+                    if (rAlpha > 0) {
+                        const writeOffset = (y * WIDTH + x) * 4;
+                        // const wAlpha = 1 - rAlpha;
+
+                        FRAMEBUFFER[writeOffset] = texture.bytes[readOffset];
+                        FRAMEBUFFER[writeOffset + 1] =
+                            texture.bytes[readOffset + 1];
+                        FRAMEBUFFER[writeOffset + 2] =
+                            texture.bytes[readOffset + 2];
+
+                        // inline blendPixel
+                        // FRAMEBUFFER[writeOffset] =
+                        //     rAlpha * texture.bytes[readOffset] +
+                        //     wAlpha * FRAMEBUFFER[writeOffset];
+                        // FRAMEBUFFER[writeOffset + 1] =
+                        //     rAlpha * texture.bytes[readOffset + 1] +
+                        //     wAlpha * FRAMEBUFFER[writeOffset + 1];
+                        // FRAMEBUFFER[writeOffset + 2] =
+                        //     rAlpha * texture.bytes[readOffset + 2] +
+                        //     wAlpha * FRAMEBUFFER[writeOffset + 2];
+                    }
+                }
 
                 u += uM;
                 v += vM;
@@ -567,7 +582,7 @@ export function textureWall(
     a1: Attributes,
     a2: Attributes,
     texture: Texture,
-    alpha?: number
+    alpha = false
 ) {
     [s1, s2] = s1.p1.y < s2.p1.y ? [s1, s2] : [s2, s1];
 
@@ -613,7 +628,7 @@ export function textureWall(
     const w = texture.width;
     const h = texture.height;
 
-    if (alpha === undefined) {
+    if (!alpha) {
         for (let x = xStartClamp; x < xEndClamp; x++) {
             const textureX = Math.floor((u / dInverse) * h) % h;
             const yStartClamp = clamp(Math.ceil(yStart), 0, HEIGHT);
@@ -623,7 +638,6 @@ export function textureWall(
 
             // basic diminishing lighting
             const relativeDepth = 1 / (dInverse * FAR);
-            const light = 1;
 
             for (let y = yStartClamp; y < yEndClamp; y++) {
                 if (DEPTHBUFFER[y * WIDTH + x] < dInverse) {
@@ -636,12 +650,11 @@ export function textureWall(
                     const writeOffset = (y * WIDTH + x) * 4;
 
                     // inline setPixel
-                    FRAMEBUFFER[writeOffset] =
-                        texture.bytes[readOffset] * light;
+                    FRAMEBUFFER[writeOffset] = texture.bytes[readOffset];
                     FRAMEBUFFER[writeOffset + 1] =
-                        texture.bytes[readOffset + 1] * light;
+                        texture.bytes[readOffset + 1];
                     FRAMEBUFFER[writeOffset + 2] =
-                        texture.bytes[readOffset + 2] * light;
+                        texture.bytes[readOffset + 2];
                 }
 
                 v += vM;
@@ -653,8 +666,6 @@ export function textureWall(
             dInverse += dInverseM;
         }
     } else {
-        const omAlpha = 1 - alpha;
-
         for (let x = xStartClamp; x < xEndClamp; x++) {
             const textureX = Math.floor((u / dInverse) * h) % h;
             const yStartClamp = clamp(Math.ceil(yStart), 0, HEIGHT);
@@ -664,25 +675,40 @@ export function textureWall(
 
             // basic diminishing lighting
             const relativeDepth = 1 / (dInverse * FAR);
-            const light = 1;
 
             for (let y = yStartClamp; y < yEndClamp; y++) {
+                if (DEPTHBUFFER[y * WIDTH + x] < dInverse) {
+                    DEPTHBUFFER[y * WIDTH + x] = dInverse;
+
                     const textureY = Math.floor(v * w) % w;
 
-                // readOffset assumes the bytes are transposed (rotated 90 anticlockwise)
-                const readOffset = (textureX * w + textureY) * 4;
-                const writeOffset = (y * WIDTH + x) * 4;
+                    // readOffset assumes the bytes are transposed (rotated 90 anticlockwise)
+                    const readOffset = (textureX * w + textureY) * 4;
 
-                // inline blendPixel
-                FRAMEBUFFER[writeOffset] =
-                    alpha * texture.bytes[readOffset] * light +
-                    omAlpha * FRAMEBUFFER[writeOffset];
-                FRAMEBUFFER[writeOffset + 1] =
-                    alpha * texture.bytes[readOffset + 1] * light +
-                    omAlpha * FRAMEBUFFER[writeOffset + 1];
-                FRAMEBUFFER[writeOffset + 2] =
-                    alpha * texture.bytes[readOffset + 2] * light +
-                    omAlpha * FRAMEBUFFER[writeOffset + 2];
+                    const rAlpha = texture.bytes[readOffset + 3];
+
+                    if (rAlpha > 0) {
+                        const writeOffset = (y * WIDTH + x) * 4;
+                        // const wAlpha = 1 - rAlpha;
+
+                        FRAMEBUFFER[writeOffset] = texture.bytes[readOffset];
+                        FRAMEBUFFER[writeOffset + 1] =
+                            texture.bytes[readOffset + 1];
+                        FRAMEBUFFER[writeOffset + 2] =
+                            texture.bytes[readOffset + 2];
+
+                        // inline blendPixel
+                        //     FRAMEBUFFER[writeOffset] =
+                        //     rAlpha * texture.bytes[readOffset] +
+                        //     wAlpha * FRAMEBUFFER[writeOffset];
+                        // FRAMEBUFFER[writeOffset + 1] =
+                        //     rAlpha * texture.bytes[readOffset + 1] +
+                        //     wAlpha * FRAMEBUFFER[writeOffset + 1];
+                        // FRAMEBUFFER[writeOffset + 2] =
+                        //     rAlpha * texture.bytes[readOffset + 2] +
+                        //     wAlpha * FRAMEBUFFER[writeOffset + 2];
+                    }
+                }
 
                 v += vM;
             }
@@ -691,6 +717,8 @@ export function textureWall(
             yEnd += l2yM;
             u += uM;
             dInverse += dInverseM;
+            // u = u1 + uM * (x - x1);
+            // dInverse = dInverse1 + dInverseM * (x - x1);
         }
     }
 }

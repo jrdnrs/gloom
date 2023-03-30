@@ -18,7 +18,7 @@ import Segment from "./lib/maths/segment";
 import Triangle from "./lib/maths/triangle";
 import Vec2 from "./lib/maths/vec2";
 import { textureTriangle, drawSegment, textureWall } from "./rasterise";
-import { MAGENTA, Floor, Wall, BLUE } from "./surface";
+import { MAGENTA, Floor, Wall, BLUE, Thing } from "./surface";
 import Texture from "./texture";
 
 export interface Renderable {
@@ -142,8 +142,7 @@ export function drawFloors(floors: Floor[]) {
                 for (const seg of tri.segments) {
                     drawSegment(
                         seg.copy().clipRect(0, WIDTH, 0, HEIGHT).round(),
-                        MAGENTA,
-                        floor.alpha
+                        MAGENTA
                     );
                 }
             }
@@ -231,12 +230,96 @@ export function drawWalls(walls: Wall[]) {
             drawSegment(
                 bottom.copy().clipRect(0, WIDTH, 0, HEIGHT).round(),
                 MAGENTA,
-                wall.alpha
+                1
             );
             drawSegment(
                 top.copy().clipRect(0, WIDTH, 0, HEIGHT).round(),
                 MAGENTA,
-                wall.alpha
+               1
+            );
+        }
+    }
+}
+
+export function drawThings(things: Thing[]) {
+    for (const thing of things) {
+        const point = thing.point
+            .copy()
+            .sub(PLAYER.camera.pos)
+            .rotate(0, PLAYER.camera.yawSin, PLAYER.camera.yawCos);
+
+        const segment = new Segment(
+            new Vec2(point.x - thing.width/2, point.y),
+            new Vec2(point.x + thing.width/2, point.y),
+        )
+
+        thing.distance = Math.sqrt(
+            ((segment.p1.x + segment.p2.x) / 2) ** 2 +
+                ((segment.p1.y + segment.p2.y) / 2) ** 2
+        );
+
+        // TODO: we might be able to optimise this with an early bounds test, not sure if worth it
+        if (
+            !(
+                segment.intersectsPoly(VIEW_SPACE) ||
+                segment.p1.inPoly(VIEW_SPACE) ||
+                segment.p2.inPoly(VIEW_SPACE)
+            )
+        ) {
+            continue;
+        }
+
+        let a1 = {
+            u: thing.textureCoords[0].x,
+            v: thing.textureCoords[0].y,
+            d: segment.p1.y,
+        };
+        let a2 = {
+            u: thing.textureCoords[1].x,
+            v: thing.textureCoords[1].y,
+            d: segment.p2.y,
+        };
+
+        // important to do this as negative Y values can create artefacts during perspective division
+        if (segment.p1.y < NEAR || segment.p2.y < NEAR) {
+            segment.clipNearAttr(NEAR, a1, a2);
+        }
+
+        // don't want to clip V
+        a1.v = thing.textureCoords[0].y;
+        a2.v = thing.textureCoords[1].y;
+
+        // using +/- half of wall height to split it at the horizon (middle of screen)
+        // negating the zOffset (Y in screen space) as positive Y is down in screen space
+        const bottom = perspectiveProjectionSeg(segment.copy(), -thing.zOffset);
+        const top = perspectiveProjectionSeg(
+            segment.copy(),
+            -(thing.height + thing.zOffset)
+        );
+
+        // with a more sophisticated visibility check we could do this earlier,
+        // but for now check if its out of screen space will do
+        if (
+            !SATtest(
+                new Quad(bottom.p1, bottom.p2, top.p1, top.p2),
+                SCREEN_SPACE
+            )
+        ) {
+            continue;
+        }
+
+        // fillColour(bottom, top, wall.colour, wall.alpha);
+        textureWall(bottom, top, a1, a2, thing.texture!, thing.alpha);
+
+        // TODO: temp for debugging
+        if (WIREFRAME) {
+            drawSegment(
+                bottom.copy().clipRect(0, WIDTH, 0, HEIGHT).round(),
+                MAGENTA
+            );
+            drawSegment(
+                top.copy().clipRect(0, WIDTH, 0, HEIGHT).round(),
+                MAGENTA
             );
         }
     }
@@ -258,25 +341,24 @@ export function drawSky(texture: Texture, rot: number) {
     top.p1.y -= HEIGHT * 1.33;
     top.p2.y -= HEIGHT * 1.33;
 
-    let a1 = {
-        u: 0,
-        v: 0,
-        d: 1_000_000,
-    };
-    let a2 = {
-        u: 1,
-        v: 1,
-        d: 1_000_000,
-    };
-
     const coordWidth = HFOVdegrees / 2 / 360;
     const angle = (PLAYER.camera.yaw + rot) % 360;
     const midCoord = angle / 360;
-    const firstCoord = midCoord - coordWidth + 2;
-    const lastCoord = midCoord + coordWidth + 2;
 
-    a1.u = firstCoord;
-    a2.u = lastCoord;
+    // +2 offset wrap does nothing, but does work to avoid negative texCoords which aren't supported
+    const u1 = midCoord - coordWidth + 2;
+    const u2 = midCoord + coordWidth + 2;
+
+    const a1 = {
+        u: u1,
+        v: 0,
+        d: 1_000_000,
+    };
+    const a2 = {
+        u: u2,
+        v: 1,
+        d: 1_000_000,
+    };
 
     textureWall(bottom, top, a1, a2, texture);
 }

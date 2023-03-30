@@ -10,15 +10,15 @@ if (process.env.NODE_ENV !== "production") {
     }
 }
 
-import Drawer from "./lib/main";
-import { DrawerConfigDefault, DrawerConfig } from "./lib/main";
+import Drawer from "./lib/drawer/drawer";
+import { DrawerConfigDefault, DrawerConfig } from "./lib/drawer/drawer";
 import { Key } from "./lib/input/keys";
 import { toRadians, viewTrapezium } from "./lib/maths/util";
 import Vec2 from "./lib/maths/vec2";
-import { Wall, Floor, YELLOW, BLUE, GREEN, MAGENTA, RED } from "./surface";
+import { Wall, Floor, YELLOW, BLUE, GREEN, MAGENTA, RED, Thing } from "./surface";
 import Segment from "./lib/maths/segment";
 import Texture from "./texture";
-import { drawFloors, drawSky, drawWalls, sortRenderables } from "./render";
+import { drawFloors, drawSky, drawThings, drawWalls, sortRenderables } from "./render";
 import Player from "./player";
 import { floorCollisionResolution, wallCollisionResolution } from "./collision";
 import Quad from "./lib/maths/quad";
@@ -64,7 +64,7 @@ hFovSlider.addEventListener("input", (ev) => {
 
 vFovSlider.addEventListener("input", (ev) => {
     const deg = (ev.target as HTMLInputElement).valueAsNumber;
-    VFOVdegrees = deg; 
+    VFOVdegrees = deg;
     VFOV = 1 / Math.tan(toRadians(VFOVdegrees / WIDTH));
 });
 
@@ -108,7 +108,7 @@ const DEFAULT_WALL_TEX_COORDS = [new Vec2(0, 0), new Vec2(1, 1)];
 
 let walls: Wall[] = [];
 let floors: Floor[] = [];
-
+let things: Thing[] = [];
 
 async function init() {
     await loadTextures();
@@ -116,6 +116,8 @@ async function init() {
 }
 
 async function loadTextures() {
+    const placeholder = await Texture.loadTexture("res/placeholder.png", false);
+
     const texturePaths = [
         "/res/test.png",
         "/res/wall.png",
@@ -125,11 +127,16 @@ async function loadTextures() {
         "/res/grass_3.png",
         "/res/blue.png",
         "/res/sky.png",
+        "/res/treeClamp.png",
     ];
 
     for (const path of texturePaths) {
-        const t = await Texture.loadTexture(path, true);
-        TEXTURES.push(t);
+        try {
+            const t = await Texture.loadTexture(path, true);
+            TEXTURES.push(t);
+        } catch {
+            TEXTURES.push(placeholder);
+        }
     }
 }
 
@@ -141,6 +148,7 @@ function loadData() {
             250,
             0,
             RED,
+            false,
             TEXTURES[2]
         ),
         new Wall(
@@ -149,6 +157,7 @@ function loadData() {
             250,
             0,
             GREEN,
+            false,
             TEXTURES[2]
         ),
         new Wall(
@@ -157,6 +166,7 @@ function loadData() {
             250,
             0,
             BLUE,
+            false,
             TEXTURES[2]
         ),
 
@@ -166,6 +176,7 @@ function loadData() {
             300,
             0,
             YELLOW,
+            false,
             TEXTURES[1]
         ),
 
@@ -175,6 +186,7 @@ function loadData() {
             500,
             0,
             BLUE,
+            false,
             TEXTURES[1]
         ),
         new Wall(
@@ -183,6 +195,7 @@ function loadData() {
             500,
             0,
             YELLOW,
+            false,
             TEXTURES[1]
         ),
         new Wall(
@@ -191,6 +204,7 @@ function loadData() {
             500,
             0,
             BLUE,
+            false,
             TEXTURES[1]
         ),
         new Wall(
@@ -199,6 +213,7 @@ function loadData() {
             500,
             0,
             YELLOW,
+            false,
             TEXTURES[1]
         ),
     ];
@@ -211,44 +226,36 @@ function loadData() {
                 new Vec2(100_000, 100_000),
                 new Vec2(100_000, -100_000),
             ],
-            [
-                new Vec2(0, 0),
-                new Vec2(200, 0),
-                new Vec2(200, 200),
-                new Vec2(0, 200),
-            ],
+            [new Vec2(0, 0), new Vec2(200, 0), new Vec2(200, 200), new Vec2(0, 200)],
             [0, 1, 2, 0, 2, 3],
             0,
             BLUE,
+            false,
             TEXTURES[4]
         ),
         new Floor(
-            [
-                new Vec2(2000, 2000),
-                new Vec2(2000, 3000),
-                new Vec2(6000, 3000),
-                new Vec2(6000, 2000),
-            ],
+            [new Vec2(2000, 2000), new Vec2(2000, 3000), new Vec2(6000, 3000), new Vec2(6000, 2000)],
             [new Vec2(0, 0), new Vec2(2, 0), new Vec2(2, 2), new Vec2(0, 2)],
             [0, 1, 2, 0, 2, 3],
             0.01,
             BLUE,
+            false,
             TEXTURES[6]
         ),
 
         new Floor(
-            [
-                new Vec2(4000, 2000),
-                new Vec2(4000, 3000),
-                new Vec2(8000, 3000),
-                new Vec2(8000, 2000),
-            ],
+            [new Vec2(4000, 2000), new Vec2(4000, 3000), new Vec2(8000, 3000), new Vec2(8000, 2000)],
             [new Vec2(0, 0), new Vec2(2, 0), new Vec2(2, 2), new Vec2(0, 2)],
             [0, 1, 2, 0, 2, 3],
             600.01,
             BLUE,
+            false,
             TEXTURES[2]
         ),
+    ];
+
+    things = [
+        new Thing(new Vec2(-800, 4000), [new Vec2(0, 0), new Vec2(1, 1)], 1000, 1000, 0, BLUE, true, TEXTURES[8]),
     ];
 }
 
@@ -271,23 +278,18 @@ function drawFrametimeGraph() {
 
     // show previous 60
     for (let i = 0; i < 60; i++) {
-        FTpoints.push(
-            new Vec2(
-                WIDTH - 90 + i,
-                Math.min(DRAW.frametimes[(DRAW.frames - i) % 128], 40) + 10
-            )
-        );
+        FTpoints.push(new Vec2(WIDTH - 90 + i, Math.min(DRAW.frametimes[(DRAW.frames - i) % 128], 40) + 10));
     }
 
     DRAW.drawPolyline("#dea300", FTpoints);
 }
 
 function draw(dt: number) {
-    // TODO: temp hack until better solution. this fixes tunneling from large movements that occur due to 
+    // TODO: temp hack until better solution. this fixes tunneling from large movements that occur due to
     //       being scaled with a very large dt. dt should be relatively small, though it can get very large
     //       if the user makes the tab inactive for a time
     if (dt < 1000) {
-        tick(dt)
+        tick(dt);
     }
 
     DEPTHBUFFER.fill(0);
@@ -299,7 +301,8 @@ function draw(dt: number) {
 
     drawWalls(walls);
     drawFloors(floors);
-    drawSky(TEXTURES[7], DRAW.timeElapsed / 1000)
+    drawSky(TEXTURES[7], DRAW.timeElapsed / 1000);
+    drawThings(things);
 
     BUFFER_CTX.putImageData(IMAGE, 0, 0);
     CTX.drawImage(BUFFER_CANVAS, 0, 0);

@@ -23,10 +23,9 @@ export default class Texture {
         }
         const blob = await r.blob();
         const img = await createImageBitmap(blob);
-        const tmpCanvas = document.createElement("canvas");
-        const tmpCtx = tmpCanvas.getContext("2d", { alpha: false })!;
-        tmpCtx.drawImage(img, 0, 0);
-        const bytes = tmpCtx.getImageData(0, 0, img.width, img.height).data;
+        const tempCanvas = document.createElement("canvas").getContext("2d", { alpha: true })!;
+        tempCanvas.drawImage(img, 0, 0);
+        const bytes = tempCanvas.getImageData(0, 0, img.width, img.height).data;
         const texture = new Texture(src, img.width, img.height, bytes);
         if (transpose) texture.transpose();
         return texture;
