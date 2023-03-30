@@ -116,18 +116,18 @@ async function init() {
 }
 
 async function loadTextures() {
-    const placeholder = await Texture.loadTexture("res/placeholder.png", false);
+    const placeholder = await Texture.loadTexture(new URL("/res/placeholder.png", import.meta.url).pathname, false);
 
     const texturePaths = [
-        "/res/test.png",
-        "/res/wall.png",
-        "/res/tiles.png",
-        "/res/grass.png",
-        "/res/grass_2.png",
-        "/res/grass_3.png",
-        "/res/blue.png",
-        "/res/sky.png",
-        "/res/treeClamp.png",
+        new URL("/res/test.png", import.meta.url).pathname,
+        new URL("/res/wall.png", import.meta.url).pathname,
+        new URL("/res/tiles.png", import.meta.url).pathname,
+        new URL("/res/grass.png", import.meta.url).pathname,
+        new URL("/res/grass_2.png", import.meta.url).pathname,
+        new URL("/res/grass_3.png", import.meta.url).pathname,
+        new URL("/res/blue.png", import.meta.url).pathname,
+        new URL("/res/sky.png", import.meta.url).pathname,
+        new URL("/res/treeClamp.png", import.meta.url).pathname,
     ];
 
     for (const path of texturePaths) {
